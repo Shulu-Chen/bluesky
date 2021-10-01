@@ -1,3 +1,37 @@
+# Summary
+## Shulu Chen @ GWU
+
+Fork of the BlueSky Air Traffic Simulator developed by TU Delft. The original ReadMe can be seen below.
+
+In this work, we built the NYC structured airspace by helicopter route and replaced the vertiport data.
+
+We designed a trajectory generator in bluesky/scenario/generate_trj.py to generate all of required operations in BlueSky.
+
+A video demo can be found [here](https://youtu.be/vRyiNrF8ic4).
+
+# Installation
+
+To run the case study please run the following steps:
+
+1. Download NYC branch of this repository.
+   git clone -b NYC https://github.com/Shulu-Chen/bluesky.git
+2. Create a python 3.6 environment (python 3.7 not work).
+3. Install all these packages: ‘pyqt5’, ’pyqtwebengine’, ’numpy’, ’scipy’, ’matplotlit’, ’pandas’, ’msgpack’, ’zmq’, ’pygame’, ‘pyopengl’, ‘rtree’.
+4. Run BlueSky.py to see if you install it successfully.
+5. Run generate_trj.py to generate a new operation list called NYC_test.scn.
+6. In BlueSky GUI, click “file->open” and choose NYC_test.scn, then you can play with that.
+
+# Features of trajectory generator
+
+1. The UAV will depart randomly in any ORIG every 10 second, totally 1000 flights.
+2. The generator will fulfill all necessary waypoints the UAV need.
+3. For confliction detection, currently we set the buffer radius as 100 meter and look ahead 1 second.
+
+
+------------------------------------------------------------------------------------------------------------------------------
+
+
+
 # BlueSky - The Open Air Traffic Simulator
 
 [![Open in Visual Studio Code](https://open.vscode.dev/badges/open-in-vscode.svg)](https://open.vscode.dev/TUDelft-CNS-ATM/bluesky)
