@@ -23,7 +23,7 @@ To run the case study please run the following steps:
 
 # Features of trajectory generator
 
-1. The UAV will depart randomly in any ORIG every 10 second, totally 1000 flights.
+1. The UAV will depart randomly in any ORIG by Poission dist.
 2. The generator will fulfill all necessary waypoints the UAV need.
 3. For confliction detection, currently we set the buffer radius as 100 meter and look ahead 1 second.
 
