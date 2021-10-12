@@ -26,7 +26,8 @@ To run the case study please run the following steps:
 1. The UAV will depart randomly in any ORIG by Poission dist.
 2. The generator will fulfill all necessary waypoints the UAV need.
 3. For confliction detection, currently we set the buffer radius as 100 meter and look ahead 1 second.
-
+4. The archetictyre of our current setting:
+![image](https://github.com/Shulu-Chen/bluesky/blob/NYC/Picture1.png)
 
 ------------------------------------------------------------------------------------------------------------------------------
 
