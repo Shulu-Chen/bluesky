@@ -1,0 +1,70 @@
+# A operation demo for NYC structured airspace
+
+
+#----------------------------Initialization-------------------------------------------
+
+# Show up aircraft trails
+00:00:00.00>TRAILS ON
+
+# Highlight the necessary intersections
+00:00:00.00>CIRCLE a, 40.689582,-73.886988 0.2
+00:00:00.00>CIRCLE b, 40.701863,-74.015915 0.2
+00:00:00.00>CIRCLE c, 40.678505,-74.029101 0.2
+00:00:00.00>CIRCLE d, 40.712367,-73.976248 0.2
+00:00:00.00>CIRCLE e, 40.743822,-73.970742 0.2
+00:00:00.00>CIRCLE f, 40.7779659,-73.8926095 0.2
+00:00:00.00>CIRCLE g, 40.6668873,-73.8055968 0.2
+00:00:00.00>CIRCLE h, 40.775976,-73.94206 0.2
+00:00:00.00>CIRCLE i, 40.78281,-73.935198 0.2
+
+# Pan screen (move view) to NYC airspace, zoom to a suitable scale, and run faster
+0:00:00.00>PAN 40.689582,-73.886988
+0:00:00.00>ZOOM 2
+0:00:00.00>FF
+
+# Turn on the conflict detection module, ZONER: size of buffer (0.05nm ~ 100m)
+0:00:00.00>ASAS ON
+0:00:00.00>ZONER 0.05
+
+# Aircraft will be deleted automatically when altitude is lower than 10 ft
+0:00:00.00>TAXI OFF 10
+
+# Logger module
+0:00:00.00>CRELOG NYCLOG 1
+0:00:00.00>NYCLOG ADD id,lat, lon, alt, tas, vs
+0:00:00.00>NYCLOG ON 1
+
+#----------------------------Flight routes-------------------------------------------
+# Create a UAV U_D_1
+00:00:10.00>CRE U_D_1,Mavic,D_1,0,0
+
+# Give the origin and destination
+00:00:10.00>ORIG U_D_1 D_1
+00:00:10.00>DEST U_D_1 D_8
+
+# Define the speed and altitude
+00:00:10.00>SPD U_D_1 30
+00:00:10.00>ALT U_D_1 400
+
+# Add waypoints to fulfill the whole flight plan, 400-altitude, 40-speed
+00:00:10.00>ADDWPT U_D_1 D_2 400 40
+00:00:10.00>ADDWPT U_D_1 D_3 400 40
+00:00:10.00>ADDWPT U_D_1 D_4 400 40
+00:00:10.00>ADDWPT U_D_1 D_5 400 40
+00:00:10.00>ADDWPT U_D_1 D_6 400 40
+00:00:10.00>ADDWPT U_D_1 D_7 400 40
+
+
+## Another flight route
+00:00:20.00>CRE U_I_2,Mavic,I_1,0,0
+00:00:20.00>LISTRTE U_I_2
+00:00:20.00>ORIG U_I_2 I_1
+00:00:20.00>DEST U_I_2 I_7
+00:00:20.00>SPD U_I_2 30
+00:00:20.00>ALT U_I_2 400
+00:00:20.00>ADDWPT U_I_2 I_2 400 40
+00:00:20.00>ADDWPT U_I_2 I_3 400 40
+00:00:20.00>ADDWPT U_I_2 I_4 400 40
+00:00:20.00>ADDWPT U_I_2 I_5 400 40
+00:00:20.00>ADDWPT U_I_2 I_6 400 40
+
