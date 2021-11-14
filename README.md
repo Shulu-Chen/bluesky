@@ -24,7 +24,7 @@ For windows:
 
 For MAC:
 
-Mac may not support PyOpenGL. You can fix this issue by editing PyOpenGL file OpenGL/platform/ctypesloader.py, and changing the line
+All steps are the same, you still need to restart your computer. Additionally, MAC may not support PyOpenGL. You can fix this issue by editing PyOpenGL file OpenGL/platform/ctypesloader.py, and changing the line
 ```
 fullName = util.find_library( name )
 ```
