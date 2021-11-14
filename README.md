@@ -23,13 +23,13 @@ For windows:
 6. In BlueSky GUI, click “file->open” and choose NYC_test.scn, then you can play with that.
 For MAC:
 Mac may not support PyOpenGL. You can fix this issue by editing PyOpenGL file OpenGL/platform/ctypesloader.py, and changing the line
-'''
+```
 fullName = util.find_library( name )
-'''
+```
 to
-'''
+```
 fullName = '/System/Library/Frameworks/OpenGL.framework/OpenGL'
-'''
+```
 # Features of trajectory generator
 
 1. The UAV will depart randomly in any ORIG by Poisson dist.
