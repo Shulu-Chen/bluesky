@@ -21,6 +21,7 @@ For windows:
 4. Run BlueSky.py to see if you install it successfully.
 5. Run generate_trj.py to generate a new operation list called NYC_test.scn.
 6. In BlueSky GUI, click “file->open” and choose NYC_test.scn, then you can play with that.
+
 For MAC:
 Mac may not support PyOpenGL. You can fix this issue by editing PyOpenGL file OpenGL/platform/ctypesloader.py, and changing the line
 ```
