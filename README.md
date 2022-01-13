@@ -34,11 +34,13 @@ fullName = '/System/Library/Frameworks/OpenGL.framework/OpenGL'
 ```
 # Features of trajectory generator
 
-1. The UAV will depart randomly in any ORIG by Poisson dist.
-2. The generator will fulfill all necessary waypoints the UAV need.
-3. For confliction detection, currently we set the buffer radius as 100 meter and look ahead 1 second.
-4. The architecture of our current setting:
+1. Run scenario/deconflication_trj.py to generate the flight plan.
+2. The UAV will depart randomly in any ORIG by Poisson dist.
+3. The generator will fulfill all necessary waypoints the UAV need.
+4. For confliction detection, currently we set the buffer radius as 100 meter.
+5. The architecture of our current setting:
 ![image](https://github.com/Shulu-Chen/bluesky/blob/NYC/ARC.png)
+
 
 ------------------------------------------------------------------------------------------------------------------------------
 
