@@ -21,7 +21,7 @@ from bluesky.simulation import ScreenIO
 from geopy.distance import geodesic
 from math import radians, cos, sin, asin, sqrt
 import matplotlib.pyplot as plt
-12345
+1234567
 class ScreenDummy(ScreenIO):
     """
     Dummy class for the screen. Inherits from ScreenIO to make sure all the
