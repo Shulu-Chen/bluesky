@@ -75,7 +75,7 @@ def add_plane(id):
     bs.stack.stack(f'VNAV {acid} ON')
 
 
-    f.write(f"00:00:{id}.00>CRE {acid} ELE01 0 0 0 0\n")
+    f.write(f"00:00:{id}.00>CRE {acid} Amzn 0 0 0 0\n")
     f.write(f"00:00:{id}.00>ORIG {acid} N_1\n")
     f.write(f"00:00:{id}.00>DEST {acid} N_5\n")
     f.write(f"00:00:{id}.00>SPD {acid} 30\n")
@@ -101,7 +101,7 @@ n_steps = int(t_max + 1)
 t = np.linspace(0, t_max, n_steps)
 
 # bs.traf.cre(acid="A"+str(0), actype="ELE01",aclat=0,aclon=0.0,acalt=0,acspd=3)
-bs.traf.cre(acid="A"+str(0), actype="ELE01",aclat=0.0, aclon=0.0)
+bs.traf.cre(acid="A"+str(0), actype="Amzn",aclat=0.0, aclon=0.0)
 add_plane(0)
 MAC=0
 LOS=0
@@ -121,7 +121,7 @@ for i in range(1,n_steps):
                 # if sample([True,False],1)[0]:
             # print(dep_dist)
             if dep_dist>200:
-                bs.traf.cre(acid="A"+str(i), actype="ELE01",aclat=0,aclon=0.0,acalt=0,acspd=3)
+                bs.traf.cre(acid="A"+str(i), actype="Amzn",aclat=0,aclon=0.0,acalt=0,acspd=3)
                 add_plane(i)
 
     # ## in-air deconfliction ##
@@ -145,7 +145,7 @@ for i in range(1,n_steps):
                 if dist>800: ## seperation large, speed up
                     bs.stack.stack(f"SPD {ac_list[j+1]} {min(spd_list[j+1]*2+5,50)}")
                     f.write(f"00:00:{i}.00>SPD {ac_list[j+1]} {min(spd_list[j+1]*2+5,50)}\n")
-                if dist<10:  ## in-air crash
+                if dist<10:  ## near in-air crash
                     MAC+=1
                     bs.stack.stack(f"DEL {ac_list[j+1]}")
                     bs.stack.stack(f"DEL {ac_list[j]}")
