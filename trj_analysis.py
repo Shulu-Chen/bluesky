@@ -17,11 +17,11 @@ from geopy.distance import geodesic
 import time
 import itertools
 
-trj_dir1 = "output/NYCLOG_NYC_case1_20211203_02-19-23.log"
-trj_dir2 = "output/NYCLOG10_NYC_dec_20211203_02-39-28.log"
-route_dir1 = "scenario/NYC_case1.scn"
-route_dir2 = "scenario/NYC_dec.scn"
+trj_dir1 = "output/NAIVE__20220225_10-11-00.log"
 
+route_dir1 = "scenario/NYC_case1.scn"
+
+f=open("scenario/interface_naive.scn","w")
 
 def route_type_get(route_dir):
     route = open(route_dir)
@@ -72,7 +72,7 @@ def LOS_get(dir):
     LOS=0
     LOS_location=[]
     for t in simt_list[1::5]:
-        print(t)
+        # print(t)
         df_= df_simt.get_group(t)
         if len(df_)==1:
             continue
@@ -86,7 +86,7 @@ def LOS_get(dir):
         if len(LOS_id)>0:
             for LOS_ in LOS_id:
                 LOS_location.append(result[LOS_[0]])
-
+    print(len(LOS_location))
     return LOS_location
 
 def conf_to_csv(in_dir, out_dir):
@@ -105,15 +105,15 @@ def conf_to_csv(in_dir, out_dir):
 # y2 = run_time_get(trj_dir2)
 
 conf_to_csv(trj_dir1,"df_naive.csv")
-conf_to_csv(trj_dir2,"df_dec.csv")
+# conf_to_csv(trj_dir2,"df_dec.csv")
 
 # print("running time",time.time()-t1)
 # A_norm=np.sum(np.abs(A)**2,axis=1)
 # B=np.tile(A_norm, (len(A_norm), 1))
 # dist_mat=B+B.transpose()-2*np.matmul(A, A.transpose())
-
-
 #
+#
+# #
 # plt.scatter(x=x1,y=y1, label="Naive case")
 # plt.scatter(x=x2,y=y2, label="Deconflication")
 # plt.legend()
