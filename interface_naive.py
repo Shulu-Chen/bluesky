@@ -106,7 +106,7 @@ lambda_x = 1/flight_interval
 ac_demand_interval = [int(expovariate(lambda_x)) for i in range(ac_number)]
 ac_depart_time = np.cumsum(ac_demand_interval)
 ori_depart_time=ac_depart_time.copy()
-departure_safety_bound = 150
+departure_safety_bound = 50
 
 # bs.traf.cre(acid="A"+str(0), actype="ELE01",aclat=0,aclon=0.0,acalt=0,acspd=3)
 bs.traf.cre(acid="A"+str(0), actype="ELE01",aclat=0.0, aclon=0.0)
@@ -165,7 +165,7 @@ for i in range(1,n_steps):
                     f.write(f"00:00:{i}.00>DEL {ac_list[j]}\n")
 
 print(f"number of LOS:{LOS}")
-print(f"number of MAC:{MAC}")
+print(f"number of MAC:{MAC*2}")
 print(ac_depart_time)
 print(ori_depart_time)
 print(ac_depart_time-ori_depart_time)
