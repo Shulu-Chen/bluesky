@@ -13,6 +13,7 @@ from bluesky.simulation import ScreenIO
 from geopy.distance import geodesic
 from math import radians, cos, sin, asin, sqrt
 import matplotlib.pyplot as plt
+from random import expovariate
 
 class ScreenDummy(ScreenIO):
     """
@@ -75,7 +76,7 @@ def add_plane(id):
     bs.stack.stack(f'VNAV {acid} ON')
 
 
-    f.write(f"00:00:{id}.00>CRE {acid} Amzn 0 0 0 0\n")
+    f.write(f"00:00:{id}.00>CRE {acid} ELE01 0 0 0 0\n")
     f.write(f"00:00:{id}.00>ORIG {acid} N_1\n")
     f.write(f"00:00:{id}.00>DEST {acid} N_5\n")
     f.write(f"00:00:{id}.00>SPD {acid} 30\n")
@@ -94,17 +95,27 @@ bs.stack.stack('DT 1;FF')
 
 # we'll run the simulation for up to 2000 seconds
 t_max = 2000
-interval=5
+
 ntraf = bs.traf.ntraf
 
 n_steps = int(t_max + 1)
 t = np.linspace(0, t_max, n_steps)
 
+# Generate the demand based on exponential distribution, lambda-number of flight per second, lambda=0.1--flight interval=10s
+ac_number=10
+flight_interval=20
+lambda_x = 1/flight_interval
+ac_demand_interval = [int(expovariate(lambda_x)) for i in range(ac_number)]
+ac_depart_time = np.cumsum(ac_demand_interval)
+ori_depart_time=ac_depart_time.copy()
+departure_safety_bound = 200
+
 # bs.traf.cre(acid="A"+str(0), actype="ELE01",aclat=0,aclon=0.0,acalt=0,acspd=3)
-bs.traf.cre(acid="A"+str(0), actype="Amzn",aclat=0.0, aclon=0.0)
+bs.traf.cre(acid="A"+str(0), actype="ELE01",aclat=0.0, aclon=0.0)
 add_plane(0)
 MAC=0
 LOS=0
+current_ac=0
 for i in range(1,n_steps):
     bs.sim.step()
     ac_list=bs.traf.id
@@ -113,16 +124,19 @@ for i in range(1,n_steps):
     lon_list=bs.traf.lon
     spd_list=bs.traf.tas
 
-    ## add aircraft ##
-    if i%interval==0:
-        if len(lat_list)>=1:
-            dep_dist=get_distance([lat_list[-1],lon_list[-1],alt_list[-1]],[0,0,0])
-            # if i%interval==0:
-                # if sample([True,False],1)[0]:
-            # print(dep_dist)
-            if dep_dist>200:
-                bs.traf.cre(acid="A"+str(i), actype="Amzn",aclat=0,aclon=0.0,acalt=0,acspd=3)
-                add_plane(i)
+    ## add aircraft based on demand##
+    if current_ac<ac_number:
+        if i>=ac_depart_time[current_ac]:
+            if len(lat_list)>=1:
+                dep_dist=get_distance([lat_list[-1],lon_list[-1],alt_list[-1]],[0,0,0])
+
+                if dep_dist>departure_safety_bound:
+                    bs.traf.cre(acid="A"+str(i), actype="ELE01",aclat=0,aclon=0.0,acalt=0,acspd=3)
+                    add_plane(i)
+                    current_ac+=1
+                else:
+                    ac_depart_time[current_ac:]=list(map(lambda x:x+1,ac_depart_time[current_ac:]))
+                    # print(ac_depart_time)
 
     # ## in-air deconfliction ##
     if i%1==0:
@@ -154,3 +168,13 @@ for i in range(1,n_steps):
 
 print(f"number of LOS:{LOS}")
 print(f"number of MAC:{MAC}")
+print(ac_depart_time)
+print(ori_depart_time)
+print(ac_depart_time-ori_depart_time)
+
+ground_delay_list=ac_depart_time-ori_depart_time
+plt.bar(range(len(ground_delay_list)), ground_delay_list)
+plt.title("Ground delay")
+plt.xlabel("Flight id")
+plt.ylabel("Delay time/s")
+plt.show()
