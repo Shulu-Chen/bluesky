@@ -66,24 +66,22 @@ def add_plane(id):
     # speed_list=[30]
     acid="A"+str(id)
     bs.stack.stack(f'ORIG {acid} N_1')
-    bs.stack.stack(f'DEST {acid} N_5')
+    bs.stack.stack(f'DEST {acid} N_4')
     bs.stack.stack(f'SPD {acid} 30')
     bs.stack.stack(f'ALT {acid} 400')
     bs.stack.stack(f'ADDWPT {acid} N_2, 400, 40')
     bs.stack.stack(f'ADDWPT {acid} N_3, 400, 40')
-    bs.stack.stack(f'ADDWPT {acid} N_4, 400, 40')
     bs.stack.stack(f'DUMPRTE {acid}')
     bs.stack.stack(f'VNAV {acid} ON')
 
 
     f.write(f"00:00:{id}.00>CRE {acid} ELE01 0 0 0 0\n")
     f.write(f"00:00:{id}.00>ORIG {acid} N_1\n")
-    f.write(f"00:00:{id}.00>DEST {acid} N_5\n")
+    f.write(f"00:00:{id}.00>DEST {acid} N_4\n")
     f.write(f"00:00:{id}.00>SPD {acid} 30\n")
     f.write(f"00:00:{id}.00>ALT {acid} 400\n")
     f.write(f"00:00:{id}.00>ADDWPT {acid} N_2, 400, 40\n")
     f.write(f"00:00:{id}.00>ADDWPT {acid} N_3, 400, 40\n")
-    f.write(f"00:00:{id}.00>ADDWPT {acid} N_4, 400, 40\n")
     f.write(f"00:00:{id}.00>VNAV {acid} ON\n")
     f.write(f"00:00:{id}.00>DUMPRTE {acid}\n")
 
@@ -94,7 +92,7 @@ bs.stack.stack('DT 1;FF')
 
 
 # we'll run the simulation for up to 2000 seconds
-t_max = 2000
+t_max = 3000
 
 ntraf = bs.traf.ntraf
 
@@ -108,7 +106,7 @@ lambda_x = 1/flight_interval
 ac_demand_interval = [int(expovariate(lambda_x)) for i in range(ac_number)]
 ac_depart_time = np.cumsum(ac_demand_interval)
 ori_depart_time=ac_depart_time.copy()
-departure_safety_bound = 200
+departure_safety_bound = 150
 
 # bs.traf.cre(acid="A"+str(0), actype="ELE01",aclat=0,aclon=0.0,acalt=0,acspd=3)
 bs.traf.cre(acid="A"+str(0), actype="ELE01",aclat=0.0, aclon=0.0)
@@ -143,8 +141,8 @@ for i in range(1,n_steps):
         if len(lat_list)<=1:
             continue
         else:
-            bs.stack.stack(f"SPD {ac_list[0]} 35")
-            f.write(f"00:00:{i}.00>SPD {ac_list[0]} 35\n")
+            bs.stack.stack(f"SPD {ac_list[0]} 40")
+            f.write(f"00:00:{i}.00>SPD {ac_list[0]} 40\n")
             for j in range(len(lat_list)-1):
                 loc1=[lat_list[j],lon_list[j],alt_list[j]]
                 loc2=[lat_list[j+1],lon_list[j+1],alt_list[j+1]]
@@ -157,8 +155,8 @@ for i in range(1,n_steps):
                     bs.stack.stack(f"SPD {ac_list[j+1]} 3")
                     f.write(f"00:00:{i}.00>SPD {ac_list[j+1]} 3\n")
                 if dist>800: ## seperation large, speed up
-                    bs.stack.stack(f"SPD {ac_list[j+1]} {min(spd_list[j+1]*2+5,50)}")
-                    f.write(f"00:00:{i}.00>SPD {ac_list[j+1]} {min(spd_list[j+1]*2+5,50)}\n")
+                    bs.stack.stack(f"SPD {ac_list[j+1]} {min(spd_list[j+1]*2+5,45)}")
+                    f.write(f"00:00:{i}.00>SPD {ac_list[j+1]} {min(spd_list[j+1]*2+5,45)}\n")
                 if dist<10:  ## near in-air crash
                     MAC+=1
                     bs.stack.stack(f"DEL {ac_list[j+1]}")
