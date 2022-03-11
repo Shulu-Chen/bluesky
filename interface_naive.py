@@ -101,12 +101,12 @@ t = np.linspace(0, t_max, n_steps)
 
 # Generate the demand based on exponential distribution, lambda-number of flight per second, lambda=0.1--flight interval=10s
 ac_number=10
-flight_interval=20
+flight_interval=100
 lambda_x = 1/flight_interval
 ac_demand_interval = [int(expovariate(lambda_x)) for i in range(ac_number)]
 ac_depart_time = np.cumsum(ac_demand_interval)
 ori_depart_time=ac_depart_time.copy()
-departure_safety_bound = 50
+departure_safety_bound = 150
 
 # bs.traf.cre(acid="A"+str(0), actype="ELE01",aclat=0,aclon=0.0,acalt=0,acspd=3)
 bs.traf.cre(acid="A"+str(0), actype="ELE01",aclat=0.0, aclon=0.0)
