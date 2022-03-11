@@ -125,6 +125,8 @@ for i in range(1,n_steps):
     spd_list=bs.traf.tas
 
     ac_comb = list(itertools.combinations(ac_list, 2))
+    ##Check the nearest comb of the acs
+
     ## add aircraft based on demand##
     if current_ac<ac_number:
         if i>=ac_depart_time[current_ac]:
