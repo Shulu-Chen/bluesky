@@ -17,7 +17,7 @@ from geopy.distance import geodesic
 import time
 import itertools
 
-trj_dir1 = "output/NAIVE__20220304_02-21-30.log"
+trj_dir1 = "output/NAIVE__20220304_10-35-05.log"
 
 # def delay_get(dir):
 dir=trj_dir1
@@ -40,4 +40,5 @@ plt.title("In_air delay")
 plt.xlabel("Flight id")
 plt.ylabel("Delay time/s")
 plt.show()
+print(in_air_delay)
 print(landing_time)
