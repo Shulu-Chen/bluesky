@@ -118,9 +118,9 @@ n_steps = int(t_max + 1)
 t = np.linspace(0, t_max, n_steps)
 
 N_number =10
-N_flight_interval = 100
+N_flight_interval = 80
 M_number = 10
-M_flight_interval = 100
+M_flight_interval = 80
 departure_safety_bound = 150
 
 # Generate the demand based on exponential distribution, lambda-number of flight per second, lambda=0.1--flight interval=10s
@@ -166,7 +166,7 @@ for i in range(1,n_steps):
     if M_current_ac<M_number:
         if i>=M_depart_time[M_current_ac]:
             if len(lat_list)>=1:
-                dep_dist=get_distance([lat_list[-1],lon_list[-1],alt_list[-1]],[0.2,0.1,0])
+                dep_dist=get_distance([lat_list[-1],lon_list[-1],alt_list[-1]],[0.1,0.1,0])
 
                 if dep_dist>departure_safety_bound:
                     bs.traf.cre(acid="A"+str(i), actype="ELE01",aclat=0.1,aclon=0.1,acalt=0,acspd=3)
