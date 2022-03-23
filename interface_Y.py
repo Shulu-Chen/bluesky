@@ -160,6 +160,7 @@ for i in range(1,n_steps):
     ac_comb = list(itertools.combinations(ac_list, 2))
     ##TODO:Check the nearest comb of the acs
 
+
     ## add aircraft based on demand##
     if U_current_ac<U_number:
         if i>=U_depart_time[U_current_ac]:
