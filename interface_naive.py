@@ -117,7 +117,7 @@ delta_v = 5
 NMAC = 0
 LOS = 0
 current_ac = 0
-check_inv = 1
+check_inv = 5
 NMAC_dist = 10
 LOS_dist = 100
 Warning_dist = 600
@@ -136,7 +136,6 @@ for i in tqdm(range(1,n_steps)):
     lat_list=bs.traf.lat
     lon_list=bs.traf.lon
     spd_list=bs.traf.tas
-
     ## add aircraft based on demand##
     if current_ac<ac_number:
         if i>=ac_depart_time[current_ac]:
@@ -157,8 +156,10 @@ for i in tqdm(range(1,n_steps)):
         if len(lat_list)<=1 or len(lat_list)<len(ac_list):
             continue
         else:
-            bs.stack.stack(f"SPD {ac_list[0]} {min(spd_list[0]*2+delta_v,max_speed)}")
-            f.write(f"00:00:{i}.00>SPD {ac_list[0]} {min(spd_list[0]*2+delta_v,max_speed)}\n")
+            ## For speed, input is kts, api output is m/s, the rate is 1.95
+            bs.stack.stack(f"SPD {ac_list[0]} {min(spd_list[0]*1.93+delta_v,max_speed)}")
+            f.write(f"00:00:{i}.00>SPD {ac_list[0]} {min(spd_list[0]*1.93+delta_v,max_speed)}\n")
+
             dist_list=[]
             ac_comb = list(itertools.combinations(ac_list, 2))
 
@@ -190,14 +191,15 @@ for i in tqdm(range(1,n_steps)):
                         ## seperation large, speed up
                         if operate_dist>SpeedUp_dist:
                             operate_ac = ac_list.index(operate_dic[operated_comb])
-                            bs.stack.stack(f"SPD {ac_list[operate_ac]} {min(spd_list[operate_ac]+delta_v,max_speed)}")
-                            f.write(f"00:00:{i}.00>SPD {ac_list[operate_ac]} {min(spd_list[operate_ac]+delta_v,max_speed)}\n")
-                            if spd_list[operate_ac]+delta_v >= max_speed:
+                            bs.stack.stack(f"SPD {ac_list[operate_ac]} {min(spd_list[operate_ac]*1.93+delta_v,max_speed)}")
+                            f.write(f"00:00:{i}.00>SPD {ac_list[operate_ac]} {min(spd_list[operate_ac]*1.93+delta_v,max_speed)}\n")
+                            if spd_list[operate_ac]*1.93+delta_v >= max_speed:
                                 pop_list.append(operated_comb)
                     except:
                         continue
                 for pop_item in pop_list:
                     operate_dic.pop(pop_item)
+
             ### Speed down the opearate ac
             if len(operate_comb_ids[0])>0:
                 for operate_comb_id in operate_comb_ids[0]:
@@ -220,8 +222,8 @@ for i in tqdm(range(1,n_steps)):
                     dist = dist_list[operate_comb_id]
 
                     if dist<Warning_dist:  ## low seperation warning, speed down
-                        bs.stack.stack(f"SPD {ac_list[operate_ac]} {max(spd_list[operate_ac]-delta_v,min_speed)}")
-                        f.write(f"00:00:{i}.00>SPD {ac_list[operate_ac]} {max(spd_list[operate_ac]-delta_v,min_speed)}\n")
+                        bs.stack.stack(f"SPD {ac_list[operate_ac]} {min(max(spd_list[operate_ac]*1.93-delta_v,min_speed),max_speed)}")
+                        f.write(f"00:00:{i}.00>SPD {ac_list[operate_ac]} {min(max(spd_list[operate_ac]*1.93-delta_v,min_speed),max_speed)}\n")
 
                     if dist<LOS_dist:  ## too low seperation, force hover (nearly)
                         LOS+=1
@@ -241,9 +243,9 @@ print(ac_depart_time)
 print(ori_depart_time)
 print(ac_depart_time-ori_depart_time)
 
-ground_delay_list=ac_depart_time-ori_depart_time
-plt.bar(range(len(ground_delay_list)), ground_delay_list)
-plt.title("Ground delay")
-plt.xlabel("Flight id")
-plt.ylabel("Delay time/s")
-plt.show()
+# ground_delay_list=ac_depart_time-ori_depart_time
+# plt.bar(range(len(ground_delay_list)), ground_delay_list)
+# plt.title("Ground delay")
+# plt.xlabel("Flight id")
+# plt.ylabel("Delay time/s")
+# plt.show()
