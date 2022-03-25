@@ -15,6 +15,7 @@ from math import radians, cos, sin, asin, sqrt
 import matplotlib.pyplot as plt
 from random import expovariate
 import itertools
+from tqdm import tqdm
 
 class ScreenDummy(ScreenIO):
     """
@@ -121,14 +122,14 @@ NMAC_dist = 10
 LOS_dist = 100
 Warning_dist = 600
 SpeedUp_dist = 800
-operate_list = []
+operate_dic = {}
 
 f=open("scenario/interface_naive.scn","w")
 init_bs()
 ac_depart_time,ori_depart_time = generate_demand(flight_interval,ac_number)
 
 
-for i in range(1,n_steps):
+for i in tqdm(range(1,n_steps)):
     bs.sim.step()
     ac_list=bs.traf.id
     alt_list=bs.traf.alt
@@ -167,11 +168,38 @@ for i in range(1,n_steps):
                 loc1=[lat_list[ac1],lon_list[ac1],alt_list[ac1]]
                 loc2=[lat_list[ac2],lon_list[ac2],alt_list[ac2]]
                 dist_list.append(get_distance(loc1,loc2))
+
             dist_list = np.array(dist_list)
-            operate_comb_ids = np.where(dist_list < 600)
-            if len(operate_comb_ids[0])==0:
+            operate_comb_ids = np.where(dist_list < SpeedUp_dist)
+
+            ### All clear
+            if len(operate_comb_ids[0])==0 and len(operate_dic)==0:
                 continue
-            else:
+
+            ### Release the operate ac if larger distance
+            if len(operate_dic)>0:
+                pop_list = []
+                for operated_comb in operate_dic:
+                    try:
+                        ac1 = ac_list.index(operated_comb[0])
+                        ac2 = ac_list.index(operated_comb[1])
+                        loc1=[lat_list[ac1],lon_list[ac1],alt_list[ac1]]
+                        loc2=[lat_list[ac2],lon_list[ac2],alt_list[ac2]]
+                        operate_dist = get_distance(loc1,loc2)
+
+                        ## seperation large, speed up
+                        if operate_dist>SpeedUp_dist:
+                            operate_ac = ac_list.index(operate_dic[operated_comb])
+                            bs.stack.stack(f"SPD {ac_list[operate_ac]} {min(spd_list[operate_ac]+delta_v,max_speed)}")
+                            f.write(f"00:00:{i}.00>SPD {ac_list[operate_ac]} {min(spd_list[operate_ac]+delta_v,max_speed)}\n")
+                            if spd_list[operate_ac]+delta_v >= max_speed:
+                                pop_list.append(operated_comb)
+                    except:
+                        continue
+                for pop_item in pop_list:
+                    operate_dic.pop(pop_item)
+            ### Speed down the opearate ac
+            if len(operate_comb_ids[0])>0:
                 for operate_comb_id in operate_comb_ids[0]:
                     operate_acs = ac_comb[operate_comb_id]
 
@@ -182,25 +210,23 @@ for i in range(1,n_steps):
                     ac2_lat = lat_list[operate_ac2]
                     if ac1_lat >= ac2_lat:
                         operate_ac = operate_ac2
-                        keep_ac = operate_ac2
+                        keep_ac = operate_ac1
+                        operate_dic[operate_acs] = operate_acs[1]
                     else:
                         operate_ac = operate_ac1
                         keep_ac = operate_ac2
+                        operate_dic[operate_acs] = operate_acs[0]
 
                     dist = dist_list[operate_comb_id]
 
                     if dist<Warning_dist:  ## low seperation warning, speed down
-                        bs.stack.stack(f"SPD {ac_list[operate_ac]} {max(spd_list[operate_ac]*2-delta_v,min_speed)}")
-                        f.write(f"00:00:{i}.00>SPD {ac_list[operate_ac]} {max(spd_list[operate_ac]*2-delta_v,min_speed)}\n")
+                        bs.stack.stack(f"SPD {ac_list[operate_ac]} {max(spd_list[operate_ac]-delta_v,min_speed)}")
+                        f.write(f"00:00:{i}.00>SPD {ac_list[operate_ac]} {max(spd_list[operate_ac]-delta_v,min_speed)}\n")
 
                     if dist<LOS_dist:  ## too low seperation, force hover (nearly)
                         LOS+=1
                         bs.stack.stack(f"SPD {ac_list[operate_ac]} {min_speed}")
                         f.write(f"00:00:{i}.00>SPD {ac_list[operate_ac]} {min_speed}\n")
-
-                    if dist>SpeedUp_dist: ## seperation large, speed up
-                        bs.stack.stack(f"SPD {ac_list[operate_ac]} {min(spd_list[operate_ac]*2+delta_v,max_speed)}")
-                        f.write(f"00:00:{i}.00>SPD {ac_list[operate_ac]} {min(spd_list[operate_ac]*2+delta_v,max_speed)}\n")
 
                     if dist<NMAC_dist:  ## near in-air crash
                         NMAC+=1
