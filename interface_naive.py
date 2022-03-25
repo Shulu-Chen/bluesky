@@ -14,6 +14,7 @@ from geopy.distance import geodesic
 from math import radians, cos, sin, asin, sqrt
 import matplotlib.pyplot as plt
 from random import expovariate
+import itertools
 
 class ScreenDummy(ScreenIO):
     """
@@ -106,16 +107,21 @@ def add_plane(id):
 
 t_max = 3000
 n_steps = int(t_max + 1)
-ac_number=10
-flight_interval=100
+ac_number = 10
+flight_interval = 100
 departure_safety_bound = 150
 max_speed = 40
 min_speed = 3
 delta_v = 5
-MAC=0
-LOS=0
-current_ac=0
-
+NMAC = 0
+LOS = 0
+current_ac = 0
+check_inv = 1
+NMAC_dist = 10
+LOS_dist = 100
+Warning_dist = 600
+SpeedUp_dist = 800
+operate_list = []
 
 f=open("scenario/interface_naive.scn","w")
 init_bs()
@@ -142,42 +148,69 @@ for i in range(1,n_steps):
                     current_ac+=1
                 else:
                     ac_depart_time[current_ac:]=list(map(lambda x:x+1,ac_depart_time[current_ac:]))
-                    # print(ac_depart_time)
+
+
 
     # ## in-air deconfliction ##
-    if i%1==0:
-        if len(lat_list)<=1:
+    if i%check_inv==0:
+        if len(lat_list)<=1 or len(lat_list)<len(ac_list):
             continue
         else:
-            bs.stack.stack(f"SPD {ac_list[0]} {max_speed}")
-            f.write(f"00:00:{i}.00>SPD {ac_list[0]} {max_speed}\n")
-            for j in range(len(lat_list)-1):
-                loc1=[lat_list[j],lon_list[j],alt_list[j]]
-                loc2=[lat_list[j+1],lon_list[j+1],alt_list[j+1]]
-                dist=get_distance(loc1,loc2)
+            bs.stack.stack(f"SPD {ac_list[0]} {min(spd_list[0]*2+delta_v,max_speed)}")
+            f.write(f"00:00:{i}.00>SPD {ac_list[0]} {min(spd_list[0]*2+delta_v,max_speed)}\n")
+            dist_list=[]
+            ac_comb = list(itertools.combinations(ac_list, 2))
 
-                if dist<600:  ## low seperation warning, speed down
-                    bs.stack.stack(f"SPD {ac_list[j+1]} {max(spd_list[j+1]*2-delta_v,min_speed)}")
-                    f.write(f"00:00:{i}.00>SPD {ac_list[j+1]} {max(spd_list[j+1]*2-delta_v,min_speed)}\n")
+            for acs in ac_comb:
+                ac1 = ac_list.index(acs[0])
+                ac2 = ac_list.index(acs[1])
+                loc1=[lat_list[ac1],lon_list[ac1],alt_list[ac1]]
+                loc2=[lat_list[ac2],lon_list[ac2],alt_list[ac2]]
+                dist_list.append(get_distance(loc1,loc2))
+            dist_list = np.array(dist_list)
+            operate_comb_ids = np.where(dist_list < 600)
+            if len(operate_comb_ids[0])==0:
+                continue
+            else:
+                for operate_comb_id in operate_comb_ids[0]:
+                    operate_acs = ac_comb[operate_comb_id]
 
-                if dist<100:  ## too low seperation, force hover (nearly)
-                    LOS+=1
-                    bs.stack.stack(f"SPD {ac_list[j+1]} {min_speed}")
-                    f.write(f"00:00:{i}.00>SPD {ac_list[j+1]} {min_speed}\n")
+                    ## compute who is the following one
+                    operate_ac1 = ac_list.index(operate_acs[0])
+                    operate_ac2 = ac_list.index(operate_acs[1])
+                    ac1_lat = lat_list[operate_ac1]
+                    ac2_lat = lat_list[operate_ac2]
+                    if ac1_lat >= ac2_lat:
+                        operate_ac = operate_ac2
+                        keep_ac = operate_ac2
+                    else:
+                        operate_ac = operate_ac1
+                        keep_ac = operate_ac2
 
-                if dist>800: ## seperation large, speed up
-                    bs.stack.stack(f"SPD {ac_list[j+1]} {min(spd_list[j+1]*2+delta_v,max_speed)}")
-                    f.write(f"00:00:{i}.00>SPD {ac_list[j+1]} {min(spd_list[j+1]*2+delta_v,max_speed)}\n")
+                    dist = dist_list[operate_comb_id]
 
-                if dist<10:  ## near in-air crash
-                    MAC+=1
-                    bs.stack.stack(f"DEL {ac_list[j+1]}")
-                    bs.stack.stack(f"DEL {ac_list[j]}")
-                    f.write(f"00:00:{i}.00>DEL {ac_list[j+1]}\n")
-                    f.write(f"00:00:{i}.00>DEL {ac_list[j]}\n")
+                    if dist<Warning_dist:  ## low seperation warning, speed down
+                        bs.stack.stack(f"SPD {ac_list[operate_ac]} {max(spd_list[operate_ac]*2-delta_v,min_speed)}")
+                        f.write(f"00:00:{i}.00>SPD {ac_list[operate_ac]} {max(spd_list[operate_ac]*2-delta_v,min_speed)}\n")
+
+                    if dist<LOS_dist:  ## too low seperation, force hover (nearly)
+                        LOS+=1
+                        bs.stack.stack(f"SPD {ac_list[operate_ac]} {min_speed}")
+                        f.write(f"00:00:{i}.00>SPD {ac_list[operate_ac]} {min_speed}\n")
+
+                    if dist>SpeedUp_dist: ## seperation large, speed up
+                        bs.stack.stack(f"SPD {ac_list[operate_ac]} {min(spd_list[operate_ac]*2+delta_v,max_speed)}")
+                        f.write(f"00:00:{i}.00>SPD {ac_list[operate_ac]} {min(spd_list[operate_ac]*2+delta_v,max_speed)}\n")
+
+                    if dist<NMAC_dist:  ## near in-air crash
+                        NMAC+=1
+                        # bs.stack.stack(f"DEL {ac_list[operate_ac]}")
+                        # bs.stack.stack(f"DEL {ac_list[keep_ac]}")
+                        # f.write(f"00:00:{i}.00>DEL {ac_list[operate_ac]}\n")
+                        # f.write(f"00:00:{i}.00>DEL {ac_list[keep_ac]}\n")
 
 print(f"number of LOS:{LOS}")
-print(f"number of MAC:{MAC*2}")
+print(f"number of MAC:{NMAC}")
 print(ac_depart_time)
 print(ori_depart_time)
 print(ac_depart_time-ori_depart_time)
