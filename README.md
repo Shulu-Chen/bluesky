@@ -1,7 +1,7 @@
 # Summary
 ## Shulu Chen @ GWU
 
-Fork of the BlueSky Air Traffic Simulator developed by TU Delft. The original ReadMe can be seen below.
+Fork from the BlueSky Air Traffic Simulator developed by TU Delft. The original ReadMe can be seen below.
 
 In this work, we built the NYC structured airspace by helicopter route and replaced the vertiport data.
 
