@@ -51,7 +51,8 @@ def get_distance(loc):
     return dist
 
 def run_time_get(dir):
-    df = pd.read_csv(dir, sep=",", header=None, names=["simt", "id", "lat", "lon", "alt", "tas", "vs"])
+
+
     df = df.drop([0, 1])
     df_id = df.groupby("id")
     id_list = list(df['id'].unique())

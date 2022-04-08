@@ -13,7 +13,7 @@ from bluesky.simulation import ScreenIO
 from geopy.distance import geodesic
 from math import radians, cos, sin, asin, sqrt
 import matplotlib.pyplot as plt
-from random import expovariate
+from random import expovariate,seed
 import itertools
 from tqdm import tqdm
 
@@ -36,12 +36,14 @@ def get_distance(location1,location2):
     lon2=location2[1]
     alt2=location2[2]
     horizon_dist=geodesic((lat1,lon1), (lat2,lon2)).m
-    dist=sqrt(horizon_dist**2+(alt1-alt2)**2)
+    # dist=sqrt(horizon_dist**2+(alt1-alt2)**2)
+    dist=horizon_dist
     return horizon_dist
 
 def generate_demand(flight_inv,ac_num):
     # Generate the demand based on exponential distribution,
     # lambda-number of flight per second, lambda=0.1--flight interval=10s
+    # seed(10)
     lambda_x = 1/flight_inv
     ac_demand_interval = [int(expovariate(lambda_x)) for i in range(ac_num)]
     ac_depart_t = np.cumsum(ac_demand_interval)
@@ -64,14 +66,14 @@ def init_bs():
     f.write("00:00:00.00>TRAILS ON \n")
     f.write("00:00:00.00>TAXI OFF 4\n")
     # f.write("0:00:00.00>ASAS ON \n")
-    f.write("0:00:00.00>PAN 0,0.2 \n")
+    f.write("0:00:00.00>PAN 0,-5.2 \n")
     f.write("0:00:00.00>ZOOM 2 \n")
     # f.write("0:00:00.00>FF \n")
     f.write("\n")
 
     # set simulation time step, and enable fast-time running
     bs.stack.stack('DT 1;FF')
-    bs.traf.cre(acid="A"+str(0), actype="ELE01",aclat=0.0, aclon=0.0)
+    bs.traf.cre(acid="A"+str(0), actype="ELE01",aclat=0.0, aclon=-5.0)
     add_plane(0)
 
 def add_plane(id):
@@ -83,7 +85,7 @@ def add_plane(id):
     bs.stack.stack(f'SPD {acid} 35')
     bs.stack.stack(f'ALT {acid} 400')
 
-    f.write(f"00:00:{id}.00>CRE {acid} ELE01 0 0 0 0\n")
+    f.write(f"00:00:{id}.00>CRE {acid} ELE01 0 -5.0 0 0\n")
     f.write(f"00:00:{id}.00>ORIG {acid} N_1\n")
     f.write(f"00:00:{id}.00>DEST {acid} N_4\n")
     f.write(f"00:00:{id}.00>SPD {acid} 35\n")
@@ -108,8 +110,8 @@ def add_plane(id):
 
 t_max = 3000
 n_steps = int(t_max + 1)
-ac_number = 10
-flight_interval = 100
+ac_number = 9
+flight_interval = 150
 departure_safety_bound = 150
 max_speed = 40
 min_speed = 3
@@ -130,6 +132,7 @@ ac_depart_time,ori_depart_time = generate_demand(flight_interval,ac_number)
 
 
 for i in tqdm(range(1,n_steps)):
+# for i in range(1,n_steps):
     bs.sim.step()
     ac_list=bs.traf.id
     alt_list=bs.traf.alt
@@ -140,10 +143,10 @@ for i in tqdm(range(1,n_steps)):
     if current_ac<ac_number:
         if i>=ac_depart_time[current_ac]:
             if len(lat_list)>=1:
-                dep_dist=get_distance([lat_list[-1],lon_list[-1],alt_list[-1]],[0,0,0])
+                dep_dist=get_distance([lat_list[-1],lon_list[-1],alt_list[-1]],[0,-5.0,0])
 
                 if dep_dist>departure_safety_bound:
-                    bs.traf.cre(acid="A"+str(i), actype="ELE01",aclat=0,aclon=0.0,acalt=0,acspd=3)
+                    bs.traf.cre(acid="A"+str(i), actype="ELE01",aclat=0.0,aclon=-5.0,acalt=0,acspd=3)
                     add_plane(i)
                     current_ac+=1
                 else:
@@ -157,8 +160,8 @@ for i in tqdm(range(1,n_steps)):
             continue
         else:
             ## For speed, input is kts, api output is m/s, the rate is 1.95
-            bs.stack.stack(f"SPD {ac_list[0]} {min(spd_list[0]*1.93+delta_v,max_speed)}")
-            f.write(f"00:00:{i}.00>SPD {ac_list[0]} {min(spd_list[0]*1.93+delta_v,max_speed)}\n")
+            # bs.stack.stack(f"SPD {ac_list[0]} {min(spd_list[0]*1.93+delta_v,max_speed)}")
+            # f.write(f"00:00:{i}.00>SPD {ac_list[0]} {min(spd_list[0]*1.93+delta_v,max_speed)}\n")
 
             dist_list=[]
             ac_comb = list(itertools.combinations(ac_list, 2))
@@ -171,8 +174,8 @@ for i in tqdm(range(1,n_steps)):
                 dist_list.append(get_distance(loc1,loc2))
 
             dist_list = np.array(dist_list)
-            operate_comb_ids = np.where(dist_list < SpeedUp_dist)
-
+            operate_comb_ids = np.where(dist_list < Warning_dist)
+            # print(f"t:{i},ac_comb{ac_comb},dist_list{dist_list},operate_comb_ids{operate_comb_ids[0]}")
             ### All clear
             if len(operate_comb_ids[0])==0 and len(operate_dic)==0:
                 continue
@@ -202,15 +205,18 @@ for i in tqdm(range(1,n_steps)):
 
             ### Speed down the opearate ac
             if len(operate_comb_ids[0])>0:
-                for operate_comb_id in operate_comb_ids[0]:
-                    operate_acs = ac_comb[operate_comb_id]
 
+                for operate_comb_id in operate_comb_ids[0]:
+                    dist = dist_list[operate_comb_id]
+                    if dist>Warning_dist:
+                        continue
+                    operate_acs = ac_comb[operate_comb_id]
                     ## compute who is the following one
                     operate_ac1 = ac_list.index(operate_acs[0])
                     operate_ac2 = ac_list.index(operate_acs[1])
-                    ac1_lat = lat_list[operate_ac1]
-                    ac2_lat = lat_list[operate_ac2]
-                    if ac1_lat >= ac2_lat:
+                    ac1_lon = lon_list[operate_ac1]
+                    ac2_lon = lon_list[operate_ac2]
+                    if abs(ac1_lon) >= abs(ac2_lon):
                         operate_ac = operate_ac2
                         keep_ac = operate_ac1
                         operate_dic[operate_acs] = operate_acs[1]
@@ -218,8 +224,6 @@ for i in tqdm(range(1,n_steps)):
                         operate_ac = operate_ac1
                         keep_ac = operate_ac2
                         operate_dic[operate_acs] = operate_acs[0]
-
-                    dist = dist_list[operate_comb_id]
 
                     if dist<Warning_dist:  ## low seperation warning, speed down
                         bs.stack.stack(f"SPD {ac_list[operate_ac]} {min(max(spd_list[operate_ac]*1.93-delta_v,min_speed),max_speed)}")
