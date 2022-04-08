@@ -129,9 +129,9 @@ def add_plane(id,type):
 t_max = 3000
 n_steps = int(t_max + 1)
 U_number =10
-U_flight_interval = 150
+U_flight_interval = 140
 D_number = 10
-D_flight_interval = 150
+D_flight_interval = 140
 departure_safety_bound = 150
 max_speed = 40
 min_speed = 3
@@ -140,7 +140,7 @@ NMAC = 0
 LOS = 0
 U_current_ac=0
 D_current_ac=0
-check_inv = 5
+check_inv = 10
 NMAC_dist = 10
 LOS_dist = 100
 Warning_dist = 600
@@ -160,15 +160,21 @@ for i in tqdm(range(1,n_steps)):
     lon_list=bs.traf.lon
     spd_list=bs.traf.tas
 
+
     ## add aircraft based on demand##
     if U_current_ac<U_number:
         if i>=U_depart_time[U_current_ac]:
             if len(lat_list)>=1:
-                dep_dist=get_distance([lat_list[-1],lon_list[-1],alt_list[-1]],[0.1,-0.1,0])
+                try:
+                    U_ind = ac_list.index(U_id)
+                except:
+                    U_ind = -1
+                dep_dist=get_distance([lat_list[U_ind],lon_list[U_ind],alt_list[U_ind]],[0.1,-0.1,0])
 
                 if dep_dist>departure_safety_bound:
                     bs.traf.cre(acid="A"+str(i), actype="ELE01",aclat=0.1,aclon=-0.1,acalt=0,acspd=3)
                     add_plane(i,"U")
+                    U_id = "A"+str(i)
                     U_current_ac+=1
                 else:
                     U_depart_time[U_current_ac:]=list(map(lambda x:x+1,U_depart_time[U_current_ac:]))
@@ -176,11 +182,16 @@ for i in tqdm(range(1,n_steps)):
     if D_current_ac<D_number:
         if i>=D_depart_time[D_current_ac]:
             if len(lat_list)>=1:
-                dep_dist=get_distance([lat_list[-1],lon_list[-1],alt_list[-1]],[-0.1,-0.1,0])
+                try:
+                    D_ind = ac_list.index(D_id)
+                except:
+                    D_ind = -1
+                dep_dist=get_distance([lat_list[D_ind],lon_list[D_ind],alt_list[D_ind]],[-0.1,-0.1,0])
 
                 if dep_dist>departure_safety_bound:
                     bs.traf.cre(acid="A"+str(i), actype="ELE01",aclat=-0.1,aclon=-0.1,acalt=0,acspd=3)
                     add_plane(i,"D")
+                    D_id = "A"+str(i)
                     D_current_ac+=1
                 else:
                     D_depart_time[D_current_ac:]=list(map(lambda x:x+1,D_depart_time[D_current_ac:]))
