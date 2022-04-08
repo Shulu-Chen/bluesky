@@ -16,7 +16,7 @@ from scipy.spatial import distance
 from geopy.distance import geodesic
 import time
 import itertools
-
+#
 trj_dir1 = "output/NAIVE__20220303_12-30-48.log"
 
 route_dir1 = "scenario/NYC_case1.scn"

@@ -16,7 +16,7 @@ import matplotlib.pyplot as plt
 from random import expovariate,seed
 import itertools
 from tqdm import tqdm
-
+#
 class ScreenDummy(ScreenIO):
     """
     Dummy class for the screen. Inherits from ScreenIO to make sure all the
@@ -66,14 +66,14 @@ def init_bs():
     f.write("00:00:00.00>TRAILS ON \n")
     f.write("00:00:00.00>TAXI OFF 4\n")
     # f.write("0:00:00.00>ASAS ON \n")
-    f.write("0:00:00.00>PAN 0,-5.2 \n")
+    f.write("0:00:00.00>PAN 0,0.2 \n")
     f.write("0:00:00.00>ZOOM 2 \n")
     # f.write("0:00:00.00>FF \n")
     f.write("\n")
 
     # set simulation time step, and enable fast-time running
     bs.stack.stack('DT 1;FF')
-    bs.traf.cre(acid="A"+str(0), actype="ELE01",aclat=0.0, aclon=-5.0)
+    bs.traf.cre(acid="A"+str(0), actype="ELE01",aclat=0.0, aclon=0.0)
     add_plane(0)
 
 def add_plane(id):
@@ -85,7 +85,7 @@ def add_plane(id):
     bs.stack.stack(f'SPD {acid} 35')
     bs.stack.stack(f'ALT {acid} 400')
 
-    f.write(f"00:00:{id}.00>CRE {acid} ELE01 0 -5.0 0 0\n")
+    f.write(f"00:00:{id}.00>CRE {acid} ELE01 0 0.0 0 0\n")
     f.write(f"00:00:{id}.00>ORIG {acid} N_1\n")
     f.write(f"00:00:{id}.00>DEST {acid} N_4\n")
     f.write(f"00:00:{id}.00>SPD {acid} 35\n")
@@ -111,7 +111,7 @@ def add_plane(id):
 t_max = 3000
 n_steps = int(t_max + 1)
 ac_number = 9
-flight_interval = 150
+flight_interval = 50
 departure_safety_bound = 150
 max_speed = 40
 min_speed = 3
@@ -139,14 +139,15 @@ for i in tqdm(range(1,n_steps)):
     lat_list=bs.traf.lat
     lon_list=bs.traf.lon
     spd_list=bs.traf.tas
+
     ## add aircraft based on demand##
     if current_ac<ac_number:
         if i>=ac_depart_time[current_ac]:
             if len(lat_list)>=1:
-                dep_dist=get_distance([lat_list[-1],lon_list[-1],alt_list[-1]],[0,-5.0,0])
+                dep_dist=get_distance([lat_list[-1],lon_list[-1],alt_list[-1]],[0,0,0])
 
                 if dep_dist>departure_safety_bound:
-                    bs.traf.cre(acid="A"+str(i), actype="ELE01",aclat=0.0,aclon=-5.0,acalt=0,acspd=3)
+                    bs.traf.cre(acid="A"+str(i), actype="ELE01",aclat=0.0,aclon=0.0,acalt=0,acspd=3)
                     add_plane(i)
                     current_ac+=1
                 else:

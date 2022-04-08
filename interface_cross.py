@@ -24,7 +24,7 @@ class ScreenDummy(ScreenIO):
     def echo(self, text='', flags=0):
         """Just print echo messages"""
         print("BlueSky console:", text)
-
+#
 #conpute the distance of two aircraft, meters
 def get_distance(location1,location2):
     lat1=location1[0]
