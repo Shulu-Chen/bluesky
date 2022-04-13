@@ -17,7 +17,7 @@ For windows:
 1. Download NYC branch of this repository.
    git clone -b NYC https://github.com/Shulu-Chen/bluesky.git
 2. Create a python 3.6 environment (python 3.7 not work).
-3. Install all these packages: ‘pyqt5’, ’pyqtwebengine’, ’numpy’, ’scipy’, ’matplotlit’, ’pandas’, ’msgpack’, ’zmq’, ’pygame’, ‘pyopengl’, ‘rtree’.
+3. Install all these packages: ‘pyqt5’, ’pyqtwebengine’, ’numpy’, ’scipy’, ’matplotlib’, ’pandas’, ’msgpack’, ’zmq’, ’pygame’, ‘pyopengl’, ‘rtree’.
 4. Run BlueSky.py to see if you install it successfully.
 5. Run generate_trj.py to generate a new operation list called NYC_test.scn.
 6. In BlueSky GUI, click “file->open” and choose NYC_test.scn, then you can play with that.
