@@ -40,7 +40,8 @@ def get_distance(location1,location2):
     dist=sqrt(horizon_dist**2+(alt1-alt2)**2)
     return horizon_dist
 
-# Generate the demand based on exponential distribution, lambda-number of flight per second, lambda=0.1--flight interval=10s
+# Generate the demand based on exponential distribution, lambda-number of flight per second,
+# lambda=0.1--flight interval=10s
 def generate_interval(interval,number):
     lambda_x = 1/interval
     ac_demand_interval = [int(expovariate(lambda_x)) for i in range(number)]
@@ -74,12 +75,14 @@ def init_bs():
     bs.traf.cre(acid="A"+str(0), actype="ELE01",aclat=0.1, aclon=-0.1)
     add_plane(0,"U")
 
+
 def add_plane(id,type):
     speed_list=[30,32,34,36,38]
     acid="A"+str(id)
     if type=="U":
         bs.stack.stack(f'ORIG {acid} N_7')
         bs.stack.stack(f'DEST {acid} N_4')
+
         bs.stack.stack(f'SPD {acid} 30')
         bs.stack.stack(f'ALT {acid} 400')
         bs.stack.stack(f'ADDWPT {acid} N_1, 400, 40')
@@ -128,7 +131,7 @@ def add_plane(id,type):
 # we'll run the simulation for up to 2000 seconds
 t_max = 3000
 n_steps = int(t_max + 1)
-U_number =10
+U_number = 10
 U_flight_interval = 140
 D_number = 10
 D_flight_interval = 140
@@ -145,10 +148,17 @@ NMAC_dist = 10
 LOS_dist = 100
 Warning_dist = 600
 SpeedUp_dist = 800
+merge_cap = 3
+merge_time = 1015  #seconds
+block_size = 20    #seconds
+check_block = np.zeros(round(t_max*2/block_size))
+safety_bound = 5
+
 operate_dic = {}
 
 f=open("scenario/interface_Y.scn","w")
 init_bs()
+check_block[int(merge_time/block_size)]+=1
 U_depart_time, U_depart_time_ori = generate_interval(U_flight_interval,U_number)
 D_depart_time, D_depart_time_ori = generate_interval(D_flight_interval,D_number)
 
@@ -171,10 +181,12 @@ for i in tqdm(range(1,n_steps)):
                     U_ind = -1
                 dep_dist=get_distance([lat_list[U_ind],lon_list[U_ind],alt_list[U_ind]],[0.1,-0.1,0])
 
-                if dep_dist>departure_safety_bound:
+                if dep_dist>departure_safety_bound and \
+                        check_block[int((merge_time+U_depart_time[U_current_ac])/block_size)]<=safety_bound:
                     bs.traf.cre(acid="A"+str(i), actype="ELE01",aclat=0.1,aclon=-0.1,acalt=0,acspd=3)
                     add_plane(i,"U")
                     U_id = "A"+str(i)
+                    check_block[int((merge_time+U_depart_time[U_current_ac])/block_size)]+=1
                     U_current_ac+=1
                 else:
                     U_depart_time[U_current_ac:]=list(map(lambda x:x+1,U_depart_time[U_current_ac:]))
@@ -188,10 +200,12 @@ for i in tqdm(range(1,n_steps)):
                     D_ind = -1
                 dep_dist=get_distance([lat_list[D_ind],lon_list[D_ind],alt_list[D_ind]],[-0.1,-0.1,0])
 
-                if dep_dist>departure_safety_bound:
+                if dep_dist>departure_safety_bound and \
+                        check_block[int((merge_time+D_depart_time[D_current_ac])/block_size)]<=safety_bound:
                     bs.traf.cre(acid="A"+str(i), actype="ELE01",aclat=-0.1,aclon=-0.1,acalt=0,acspd=3)
                     add_plane(i,"D")
                     D_id = "A"+str(i)
+                    check_block[int((merge_time+D_depart_time[D_current_ac])/block_size)]+=1
                     D_current_ac+=1
                 else:
                     D_depart_time[D_current_ac:]=list(map(lambda x:x+1,D_depart_time[D_current_ac:]))
