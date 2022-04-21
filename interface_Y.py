@@ -17,6 +17,7 @@ import matplotlib.pyplot as plt
 from random import expovariate,seed
 import itertools
 from tqdm import tqdm
+import sys
 #
 class ScreenDummy(ScreenIO):
     """
@@ -158,8 +159,9 @@ check_inv = 10                 #second
 NMAC_dist = 10                 #meters
 LOS_dist = 100                 #meters
 Warning_dist = 600             #meters
-SpeedUp_dist = 800             #meters
-merge_capacity = 1
+SpeedUp_dist = 800
+#meters
+merge_capacity = int(sys.argv[1])
 merge_time = 1015              #seconds
 check_block_size = 100         #seconds
 
@@ -363,10 +365,16 @@ LOS_list = []
 delay_list= []
 
 safety,efficiency = run_sim(merge_capacity,check_block_size)
-
+print("*******************************")
 print(f"number of LOS:{safety[0]}")
 print(f"number of MAC:{safety[1]}")
 print(f"average delay:{round(efficiency)} s")
+print("Capacity=",merge_capacity)
+print("*******************************")
+g=open("capacity_data.txt","a")
+g.write(f"{safety[0]},{merge_capacity},LOS\n")
+g.write(f"{safety[1]},{merge_capacity},NMAC\n")
+g.write(f"{round(efficiency)},{merge_capacity},Ground Delay\n")
 
 # plt.bar(range(len(LOS_list)), LOS_list)
 # plt.title("Los")
