@@ -43,7 +43,7 @@ def get_distance(location1,location2):
 # Generate the demand based on exponential distribution, lambda-number of flight per second,
 # lambda=0.1--flight interval=10s
 def generate_interval(interval,number):
-    seed(100)
+    # seed(100)
     lambda_x = 1/interval
     ac_demand_interval = [int(expovariate(lambda_x)) for i in range(number)]
     depart_time = np.cumsum(ac_demand_interval)
@@ -54,14 +54,14 @@ def init_bs():
 
     # initialize bluesky as non-networked simulation node
 
-    bs.stack.stack('CRELOG Y 1')
-    bs.stack.stack('Y ADD id,lat, lon, alt, tas, vs ')
-    bs.stack.stack('Y ON 1  ')
+    # bs.stack.stack('CRELOG Y 1')
+    # bs.stack.stack('Y ADD id,lat, lon, alt, tas, vs ')
+    # bs.stack.stack('Y ON 1  ')
     # bs.stack.stack('ASAS ON')
     bs.stack.stack('TAXI OFF 4')
-    f.write("00:00:00.00>CRELOG Y_gui 1\n")
-    f.write("00:00:00.00>Y_gui ADD id,lat, lon, alt, tas, vs\n")
-    f.write("00:00:00.00>Y_gui ON 1\n")
+    # f.write("00:00:00.00>CRELOG Y_gui 1\n")
+    # f.write("00:00:00.00>Y_gui ADD id,lat, lon, alt, tas, vs\n")
+    # f.write("00:00:00.00>Y_gui ON 1\n")
     f.write("00:00:00.00>TRAILS ON \n")
     f.write("00:00:00.00>TAXI OFF 4\n")
     # f.write("0:00:00.00>ASAS ON \n")
@@ -77,56 +77,72 @@ def init_bs():
 
 
 def add_plane(id,type):
-    speed_list=[30,32,34,36,38]
+    speed_list=[30,31,32,33,34]
 
     if type=="U":
+
         acid="U"+str(id)
+
         bs.stack.stack(f'ORIG {acid} N_7')
         bs.stack.stack(f'DEST {acid} N_4')
-
-        bs.stack.stack(f'SPD {acid} 30')
-        bs.stack.stack(f'ALT {acid} 400')
-        bs.stack.stack(f'ADDWPT {acid} N_1, 400, 40')
-        bs.stack.stack(f'ADDWPT {acid} N_2, 400, 40')
-        bs.stack.stack(f'ADDWPT {acid} N_3, 400, 40')
-        # bs.stack.stack(f'DUMPRTE {acid}')
-        bs.stack.stack(f'VNAV {acid} ON')
-
-
         f.write(f"00:00:{id}.00>CRE {acid} ELE01 0.1 -0.1 0 0\n")
         f.write(f"00:00:{id}.00>ORIG {acid} N_7\n")
         f.write(f"00:00:{id}.00>DEST {acid} N_4\n")
-        f.write(f"00:00:{id}.00>SPD {acid} 30\n")
+
+        v = random.choice(speed_list)
+        bs.stack.stack(f'SPD {acid} {v}')
+        f.write(f"00:00:{id}.00>SPD {acid} {v}\n")
+
+        bs.stack.stack(f'ALT {acid} 400')
         f.write(f"00:00:{id}.00>ALT {acid} 400\n")
-        f.write(f"00:00:{id}.00>ADDWPT {acid} N_1, 400, 40\n")
-        f.write(f"00:00:{id}.00>ADDWPT {acid} N_2, 400, 40\n")
-        f.write(f"00:00:{id}.00>ADDWPT {acid} N_3, 400, 40\n")
+
+        v = random.choice(speed_list)
+        bs.stack.stack(f'ADDWPT {acid} N_1, 400, {v}')
+        f.write(f"00:00:{id}.00>ADDWPT {acid} N_1, 400, {v}\n")
+
+        v = random.choice(speed_list)
+        bs.stack.stack(f'ADDWPT {acid} N_2, 400, {v}')
+        f.write(f"00:00:{id}.00>ADDWPT {acid} N_2, 400, {v}\n")
+
+        v = random.choice(speed_list)
+        bs.stack.stack(f'ADDWPT {acid} N_3, 400, {v}')
+        f.write(f"00:00:{id}.00>ADDWPT {acid} N_3, 400, {v}\n")
+
+        bs.stack.stack(f'VNAV {acid} ON')
         f.write(f"00:00:{id}.00>VNAV {acid} ON\n")
-        # f.write(f"00:00:{id}.00>DUMPRTE {acid}\n")
 
     if type=="D":
+
         acid="D"+str(id)
+
         bs.stack.stack(f'ORIG {acid} N_9')
         bs.stack.stack(f'DEST {acid} N_4')
-        bs.stack.stack(f'SPD {acid} 30')
-        bs.stack.stack(f'ALT {acid} 400')
-        bs.stack.stack(f'ADDWPT {acid} N_1, 400, 40')
-        bs.stack.stack(f'ADDWPT {acid} N_2, 400, 40')
-        bs.stack.stack(f'ADDWPT {acid} N_3, 400, 40')
-        # bs.stack.stack(f'DUMPRTE {acid}')
-        bs.stack.stack(f'VNAV {acid} ON')
-
 
         f.write(f"00:00:{id}.00>CRE {acid} ELE01 -0.1 -0.1 0 0\n")
         f.write(f"00:00:{id}.00>ORIG {acid} N_9\n")
         f.write(f"00:00:{id}.00>DEST {acid} N_4\n")
-        f.write(f"00:00:{id}.00>SPD {acid} 30\n")
+
+        v = random.choice(speed_list)
+        bs.stack.stack(f'SPD {acid} {v}')
+        f.write(f"00:00:{id}.00>SPD {acid} {v}\n")
+
+        bs.stack.stack(f'ALT {acid} 400')
         f.write(f"00:00:{id}.00>ALT {acid} 400\n")
-        f.write(f"00:00:{id}.00>ADDWPT {acid} N_1, 400, 40\n")
-        f.write(f"00:00:{id}.00>ADDWPT {acid} N_2, 400, 40\n")
-        f.write(f"00:00:{id}.00>ADDWPT {acid} N_3, 400, 40\n")
+
+        v = random.choice(speed_list)
+        bs.stack.stack(f'ADDWPT {acid} N_1, 400, {v}')
+        f.write(f"00:00:{id}.00>ADDWPT {acid} N_1, 400, {v}\n")
+
+        v = random.choice(speed_list)
+        bs.stack.stack(f'ADDWPT {acid} N_2, 400, {v}')
+        f.write(f"00:00:{id}.00>ADDWPT {acid} N_2, 400, {v}\n")
+
+        v = random.choice(speed_list)
+        bs.stack.stack(f'ADDWPT {acid} N_3, 400, {v}')
+        f.write(f"00:00:{id}.00>ADDWPT {acid} N_3, 400, {v}\n")
+
         f.write(f"00:00:{id}.00>VNAV {acid} ON\n")
-        # f.write(f"00:00:{id}.00>DUMPRTE {acid}\n")
+        bs.stack.stack(f'VNAV {acid} ON')
 
     f.write("\n")
 
@@ -345,10 +361,7 @@ def run_sim(check_point_capacity,block_size,number_list=AC_nums,interval_list=AC
 
 LOS_list = []
 delay_list= []
-# for i in range(10):
-#      safety,efficiency = run_sim(i,check_block_size)
-#      LOS_list.append(safety[0])
-#      delay_list.append(efficiency)
+
 safety,efficiency = run_sim(merge_capacity,check_block_size)
 
 print(f"number of LOS:{safety[0]}")
