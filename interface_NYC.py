@@ -43,7 +43,7 @@ def get_distance(location1,location2):
 # Generate the demand based on exponential distribution, lambda-number of flight per second,
 # lambda=0.1--flight interval=10s
 def generate_interval(interval,number):
-    seed(100)
+    seed(10)
     lambda_x = 1/interval
     ac_demand_interval = [int(expovariate(lambda_x)) for i in range(number)]
     depart_time = np.cumsum(ac_demand_interval)
@@ -73,8 +73,8 @@ def init_bs():
 
     # set simulation time step, and enable fast-time running
     bs.stack.stack('DT 1;FF')
-    bs.traf.cre(acid="A"+str(0), actype="ELE01",aclat=40.5959242, aclon=-74.0465984)
-    add_plane(0,"U")
+    bs.traf.cre(acid="A"+str(0), actype="ELE01",aclat=40.749573, aclon=-73.901223)
+    add_plane(0,"I")
 
 
 def add_plane(id,type):
@@ -195,9 +195,9 @@ def add_plane(id,type):
 
     f.write("\n")
 
-t_max = 10000                   #seconds
+t_max = 3000                   #seconds
 n_steps = int(t_max + 1)
-AC_nums = [10,10,10]
+AC_nums = [10,10,20]
 AC_intervals = [50,50,50]         #seconds
 departure_safety_bound = 150   #seconds
 max_speed = 40                 #kts
@@ -209,14 +209,15 @@ LOS_dist = 100                 #meters
 Warning_dist = 600             #meters
 SpeedUp_dist = 800             #meters
 merge_capacity = 1
-merge_time = 1015              #seconds
+#TODO: test the entering time
+merge_time = [657,1026,404]              #seconds
 check_block_size = 150         #seconds
-check_block = np.zeros(round(t_max/check_block_size))
+check_block = np.zeros(round(t_max*2/check_block_size))
 
 
 f=open("scenario/interface_NYC.scn","w")
 init_bs()
-check_block[int(merge_time/check_block_size)]+=1
+check_block[int(merge_time[0]/check_block_size)]+=1
 
 def run_sim(check_point_capacity,block_size,number_list=AC_nums,interval_list=AC_intervals):
     NMAC = 0
@@ -254,11 +255,11 @@ def run_sim(check_point_capacity,block_size,number_list=AC_nums,interval_list=AC
                     dep_dist=get_distance([lat_list[A_ind],lon_list[A_ind],alt_list[A_ind]],[40.5959242,-74.0465984,0])
 
                     if dep_dist>departure_safety_bound and \
-                            check_block[int((merge_time+A_depart_time[A_current_ac])/block_size)]<=check_point_capacity:
+                            check_block[int((merge_time[0]+A_depart_time[A_current_ac])/block_size)]<=check_point_capacity:
                         bs.traf.cre(acid="A"+str(i), actype="ELE01",aclat=40.5959242,aclon=-74.0465984,acalt=0,acspd=3)
                         add_plane(i,"A")
                         A_id = "A"+str(i)
-                        check_block[int((merge_time+A_depart_time[A_current_ac])/block_size)]+=1
+                        check_block[int((merge_time[0]+A_depart_time[A_current_ac])/block_size)]+=1
                         A_current_ac+=1
                     else:
                         A_depart_time[A_current_ac:]=list(map(lambda x:x+1,A_depart_time[A_current_ac:]))
@@ -273,11 +274,11 @@ def run_sim(check_point_capacity,block_size,number_list=AC_nums,interval_list=AC
                     dep_dist=get_distance([lat_list[G_ind],lon_list[G_ind],alt_list[G_ind]],[40.6964385,-74.1231651,0])
 
                     if dep_dist>departure_safety_bound and \
-                            check_block[int((merge_time+G_depart_time[G_current_ac])/block_size)]<=check_point_capacity:
+                            check_block[int((merge_time[1]+G_depart_time[G_current_ac])/block_size)]<=check_point_capacity:
                         bs.traf.cre(acid="A"+str(i), actype="ELE01",aclat=40.6964385,aclon=-74.1231651,acalt=0,acspd=3)
                         add_plane(i,"G")
                         G_id = "A"+str(i)
-                        check_block[int((merge_time+G_depart_time[G_current_ac])/block_size)]+=1
+                        check_block[int((merge_time[1]+G_depart_time[G_current_ac])/block_size)]+=1
                         G_current_ac+=1
                     else:
                         G_depart_time[G_current_ac:]=list(map(lambda x:x+1,G_depart_time[G_current_ac:]))
@@ -292,11 +293,11 @@ def run_sim(check_point_capacity,block_size,number_list=AC_nums,interval_list=AC
                     dep_dist=get_distance([lat_list[I_ind],lon_list[I_ind],alt_list[I_ind]],[40.749573,-73.901223,0])
 
                     if dep_dist>departure_safety_bound and \
-                            check_block[int((merge_time+I_depart_time[I_current_ac])/block_size)]<=check_point_capacity:
+                            check_block[int((merge_time[2]+I_depart_time[I_current_ac])/block_size)]<=check_point_capacity:
                         bs.traf.cre(acid="A"+str(i), actype="ELE01",aclat=40.749573,aclon=-73.901223,acalt=0,acspd=3)
                         add_plane(i,"I")
                         I_id = "A"+str(i)
-                        check_block[int((merge_time+I_depart_time[I_current_ac])/block_size)]+=1
+                        check_block[int((merge_time[2]+I_depart_time[I_current_ac])/block_size)]+=1
                         I_current_ac+=1
                     else:
                         I_depart_time[I_current_ac:]=list(map(lambda x:x+1,I_depart_time[I_current_ac:]))
