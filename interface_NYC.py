@@ -17,6 +17,7 @@ import matplotlib.pyplot as plt
 from random import expovariate,seed
 import itertools
 from tqdm import tqdm
+import random
 #
 class ScreenDummy(ScreenIO):
     """
@@ -43,7 +44,6 @@ def get_distance(location1,location2):
 # Generate the demand based on exponential distribution, lambda-number of flight per second,
 # lambda=0.1--flight interval=10s
 def generate_interval(interval,number):
-    seed(10)
     lambda_x = 1/interval
     ac_demand_interval = [int(expovariate(lambda_x)) for i in range(number)]
     depart_time = np.cumsum(ac_demand_interval)
@@ -55,14 +55,14 @@ def init_bs():
     # initialize bluesky as non-networked simulation node
     bs.init('sim-detached')
 
-    bs.stack.stack('CRELOG NYC 1')
-    bs.stack.stack('NYC ADD id,lat, lon, alt, tas, vs ')
-    bs.stack.stack('NYC ON 1  ')
+    # bs.stack.stack('CRELOG NYC 1')
+    # bs.stack.stack('NYC ADD id,lat, lon, alt, tas, vs ')
+    # bs.stack.stack('NYC ON 1  ')
     # bs.stack.stack('ASAS ON')
     bs.stack.stack('TAXI OFF 4')
-    f.write("00:00:00.00>CRELOG NYC_gui 1\n")
-    f.write("00:00:00.00>NYC_gui ADD id,lat, lon, alt, tas, vs\n")
-    f.write("00:00:00.00>NYC_gui ON 1\n")
+    # f.write("00:00:00.00>CRELOG NYC_gui 1\n")
+    # f.write("00:00:00.00>NYC_gui ADD id,lat, lon, alt, tas, vs\n")
+    # f.write("00:00:00.00>NYC_gui ON 1\n")
     f.write("00:00:00.00>TRAILS ON \n")
     f.write("00:00:00.00>TAXI OFF 4\n")
     # f.write("0:00:00.00>ASAS ON \n")
@@ -73,70 +73,100 @@ def init_bs():
 
     # set simulation time step, and enable fast-time running
     bs.stack.stack('DT 1;FF')
-    bs.traf.cre(acid="A"+str(0), actype="ELE01",aclat=40.749573, aclon=-73.901223)
-    add_plane(0,"I")
+    # bs.traf.cre(acid="I"+str(0), actype="ELE01",aclat=40.749573, aclon=-73.901223)
+    bs.traf.cre(acid="A"+str(0), actype="ELE01",aclat=40.5959242, aclon=-74.0465984)
+    # bs.traf.cre(acid="G"+str(0), actype="ELE01",aclat=40.6964385, aclon=-74.1231651)
+    add_plane(0,"A")
 
 
 def add_plane(id,type):
-    speed_list=[30,32,34,36,38]
-    acid="A"+str(id)
-    if type=="A":
+    speed_list=[30,31,32,33,34]
 
+    if type=="A":
+        acid="A"+str(id)
         bs.stack.stack(f'ORIG {acid} L_6')
         bs.stack.stack(f'DEST {acid} A_9')
-        bs.stack.stack(f'SPD {acid} 30')
+        bs.stack.stack(f'SPD {acid} 32')
         bs.stack.stack(f'ALT {acid} 400')
-        bs.stack.stack(f'ADDWPT {acid} L_5, 400, 40')
-        bs.stack.stack(f'ADDWPT {acid} L_4, 400, 40')
-        bs.stack.stack(f'ADDWPT {acid} L_3, 400, 40')
-        bs.stack.stack(f'ADDWPT {acid} L_2, 400, 40')
-        bs.stack.stack(f'ADDWPT {acid} L_1, 400, 40')
-        bs.stack.stack(f'ADDWPT {acid} A_2, 400, 40')
-        bs.stack.stack(f'ADDWPT {acid} A_3, 400, 40')
-        bs.stack.stack(f'ADDWPT {acid} A_4, 400, 40')
-        bs.stack.stack(f'ADDWPT {acid} A_5, 400, 40')
-        bs.stack.stack(f'ADDWPT {acid} A_6, 400, 40')
-        bs.stack.stack(f'ADDWPT {acid} A_7, 400, 40')
-        bs.stack.stack(f'ADDWPT {acid} A_8, 400, 40')
-        bs.stack.stack(f'DUMPRTE {acid}')
-        bs.stack.stack(f'VNAV {acid} ON')
-
 
         f.write(f"00:00:{id}.00>CRE {acid} ELE01 L_6 0 0\n")
         f.write(f"00:00:{id}.00>ORIG {acid} L_6\n")
         f.write(f"00:00:{id}.00>DEST {acid} A_9\n")
         f.write(f"00:00:{id}.00>SPD {acid} 30\n")
         f.write(f"00:00:{id}.00>ALT {acid} 400\n")
-        f.write(f"00:00:{id}.00>ADDWPT {acid} L_5, 400, 40\n")
-        f.write(f"00:00:{id}.00>ADDWPT {acid} L_4, 400, 40\n")
-        f.write(f"00:00:{id}.00>ADDWPT {acid} L_3, 400, 40\n")
-        f.write(f"00:00:{id}.00>ADDWPT {acid} L_2, 400, 40\n")
-        f.write(f"00:00:{id}.00>ADDWPT {acid} L_1, 400, 40\n")
-        f.write(f"00:00:{id}.00>ADDWPT {acid} A_2, 400, 40\n")
-        f.write(f"00:00:{id}.00>ADDWPT {acid} A_3, 400, 40\n")
-        f.write(f"00:00:{id}.00>ADDWPT {acid} A_4, 400, 40\n")
-        f.write(f"00:00:{id}.00>ADDWPT {acid} A_5, 400, 40\n")
-        f.write(f"00:00:{id}.00>ADDWPT {acid} A_6, 400, 40\n")
-        f.write(f"00:00:{id}.00>ADDWPT {acid} A_7, 400, 40\n")
-        f.write(f"00:00:{id}.00>ADDWPT {acid} A_8, 400, 40\n")
+
+
+        v = random.choice(speed_list)
+        bs.stack.stack(f'ADDWPT {acid} L_5, 400, {v}')
+        f.write(f"00:00:{id}.00>ADDWPT {acid} L_5, 400, {v}\n")
+
+        v = random.choice(speed_list)
+        bs.stack.stack(f'ADDWPT {acid} L_4, 400, {v}')
+        f.write(f"00:00:{id}.00>ADDWPT {acid} L_4, 400, {v}\n")
+
+        v = random.choice(speed_list)
+        bs.stack.stack(f'ADDWPT {acid} L_3, 400, {v}')
+        f.write(f"00:00:{id}.00>ADDWPT {acid} L_3, 400, {v}\n")
+
+        v = random.choice(speed_list)
+        bs.stack.stack(f'ADDWPT {acid} L_2, 400, {v}')
+        f.write(f"00:00:{id}.00>ADDWPT {acid} L_2, 400, {v}\n")
+
+        v = random.choice(speed_list)
+        bs.stack.stack(f'ADDWPT {acid} L_1, 400, {v}')
+        f.write(f"00:00:{id}.00>ADDWPT {acid} L_1, 400, {v}\n")
+
+        v = random.choice(speed_list)
+        bs.stack.stack(f'ADDWPT {acid} A_2, 400, {v}')
+        f.write(f"00:00:{id}.00>ADDWPT {acid} A_2, 400, {v}\n")
+
+        v = random.choice(speed_list)
+        bs.stack.stack(f'ADDWPT {acid} A_3, 400, {v}')
+        f.write(f"00:00:{id}.00>ADDWPT {acid} A_3, 400, {v}\n")
+
+        v = random.choice(speed_list)
+        bs.stack.stack(f'ADDWPT {acid} A_4, 400, {v}')
+        f.write(f"00:00:{id}.00>ADDWPT {acid} A_4, 400, {v}\n")
+
+        v = random.choice(speed_list)
+        bs.stack.stack(f'ADDWPT {acid} A_5, 400, {v}')
+        f.write(f"00:00:{id}.00>ADDWPT {acid} A_5, 400, {v}\n")
+
+        v = random.choice(speed_list)
+        bs.stack.stack(f'ADDWPT {acid} A_6, 400, {v}')
+        f.write(f"00:00:{id}.00>ADDWPT {acid} A_6, 400, {v}\n")
+
+        v = random.choice(speed_list)
+        bs.stack.stack(f'ADDWPT {acid} A_7, 400, {v}')
+        f.write(f"00:00:{id}.00>ADDWPT {acid} A_7, 400, {v}\n")
+
+        v = random.choice(speed_list)
+        bs.stack.stack(f'ADDWPT {acid} A_8, 400, {v}')
+        f.write(f"00:00:{id}.00>ADDWPT {acid} A_8, 400, {v}\n")
+
+
+        bs.stack.stack(f'DUMPRTE {acid}')
+        bs.stack.stack(f'VNAV {acid} ON')
+
         f.write(f"00:00:{id}.00>VNAV {acid} ON\n")
         f.write(f"00:00:{id}.00>DUMPRTE {acid}\n")
 
     if type=="G":
-
+        acid="G"+str(id)
         bs.stack.stack(f'ORIG {acid} G_7')
         bs.stack.stack(f'DEST {acid} H_8')
-        bs.stack.stack(f'SPD {acid} 30')
+        bs.stack.stack(f'SPD {acid} 32')
         bs.stack.stack(f'ALT {acid} 400')
-        bs.stack.stack(f'ADDWPT {acid} G_6, 400, 40')
-        bs.stack.stack(f'ADDWPT {acid} G_5, 400, 40')
-        bs.stack.stack(f'ADDWPT {acid} G_4, 400, 40')
-        bs.stack.stack(f'ADDWPT {acid} G_3, 400, 40')
-        bs.stack.stack(f'ADDWPT {acid} G_2, 400, 40')
-        bs.stack.stack(f'ADDWPT {acid} G_1, 400, 40')
-        bs.stack.stack(f'ADDWPT {acid} H_2, 400, 40')
-        bs.stack.stack(f'ADDWPT {acid} H_4, 400, 40')
-        bs.stack.stack(f'ADDWPT {acid} H_6, 400, 40')
+        v = random.choice(speed_list)
+        bs.stack.stack(f'ADDWPT {acid} G_6, 400, {v}')
+        bs.stack.stack(f'ADDWPT {acid} G_5, 400, {v}')
+        bs.stack.stack(f'ADDWPT {acid} G_4, 400, {v}')
+        bs.stack.stack(f'ADDWPT {acid} G_3, 400, {v}')
+        bs.stack.stack(f'ADDWPT {acid} G_2, 400, {v}')
+        bs.stack.stack(f'ADDWPT {acid} G_1, 400, {v}')
+        bs.stack.stack(f'ADDWPT {acid} H_2, 400, {v}')
+        bs.stack.stack(f'ADDWPT {acid} H_4, 400, {v}')
+        bs.stack.stack(f'ADDWPT {acid} H_7, 400, {v}')
         bs.stack.stack(f'DUMPRTE {acid}')
         bs.stack.stack(f'VNAV {acid} ON')
 
@@ -146,32 +176,33 @@ def add_plane(id,type):
         f.write(f"00:00:{id}.00>DEST {acid} H_8\n")
         f.write(f"00:00:{id}.00>SPD {acid} 30\n")
         f.write(f"00:00:{id}.00>ALT {acid} 400\n")
-        f.write(f"00:00:{id}.00>ADDWPT {acid} G_6, 400, 40\n")
-        f.write(f"00:00:{id}.00>ADDWPT {acid} G_5, 400, 40\n")
-        f.write(f"00:00:{id}.00>ADDWPT {acid} G_4, 400, 40\n")
-        f.write(f"00:00:{id}.00>ADDWPT {acid} G_3, 400, 40\n")
-        f.write(f"00:00:{id}.00>ADDWPT {acid} G_2, 400, 40\n")
-        f.write(f"00:00:{id}.00>ADDWPT {acid} G_1, 400, 40\n")
-        f.write(f"00:00:{id}.00>ADDWPT {acid} H_2, 400, 40\n")
-        f.write(f"00:00:{id}.00>ADDWPT {acid} H_4, 400, 40\n")
-        f.write(f"00:00:{id}.00>ADDWPT {acid} H_6, 400, 40\n")
+        f.write(f"00:00:{id}.00>ADDWPT {acid} G_6, 400, {v}\n")
+        f.write(f"00:00:{id}.00>ADDWPT {acid} G_5, 400, {v}\n")
+        f.write(f"00:00:{id}.00>ADDWPT {acid} G_4, 400, {v}\n")
+        f.write(f"00:00:{id}.00>ADDWPT {acid} G_3, 400, {v}\n")
+        f.write(f"00:00:{id}.00>ADDWPT {acid} G_2, 400, {v}\n")
+        f.write(f"00:00:{id}.00>ADDWPT {acid} G_1, 400, {v}\n")
+        f.write(f"00:00:{id}.00>ADDWPT {acid} H_2, 400, {v}\n")
+        f.write(f"00:00:{id}.00>ADDWPT {acid} H_4, 400, {v}\n")
+        f.write(f"00:00:{id}.00>ADDWPT {acid} H_7, 400, {v}\n")
         f.write(f"00:00:{id}.00>VNAV {acid} ON\n")
         f.write(f"00:00:{id}.00>DUMPRTE {acid}\n")
 
     if type=="I":
-
+        acid="I"+str(id)
         bs.stack.stack(f'ORIG {acid} I_6')
         bs.stack.stack(f'DEST {acid} H_8')
-        bs.stack.stack(f'SPD {acid} 30')
+        bs.stack.stack(f'SPD {acid} 32')
         bs.stack.stack(f'ALT {acid} 400')
-        bs.stack.stack(f'ADDWPT {acid} I_5, 400, 40')
-        bs.stack.stack(f'ADDWPT {acid} I_4, 400, 40')
-        bs.stack.stack(f'ADDWPT {acid} I_3, 400, 40')
-        bs.stack.stack(f'ADDWPT {acid} I_2, 400, 40')
-        bs.stack.stack(f'ADDWPT {acid} I_1, 400, 40')
-        bs.stack.stack(f'ADDWPT {acid} H_2, 400, 40')
-        bs.stack.stack(f'ADDWPT {acid} H_4, 400, 40')
-        bs.stack.stack(f'ADDWPT {acid} H_6, 400, 40')
+        v = random.choice(speed_list)
+        bs.stack.stack(f'ADDWPT {acid} I_5, 400, {v}')
+        bs.stack.stack(f'ADDWPT {acid} I_4, 400, {v}')
+        bs.stack.stack(f'ADDWPT {acid} I_3, 400, {v}')
+        bs.stack.stack(f'ADDWPT {acid} I_2, 400, {v}')
+        bs.stack.stack(f'ADDWPT {acid} I_1, 400, {v}')
+        bs.stack.stack(f'ADDWPT {acid} H_2, 400, {v}')
+        bs.stack.stack(f'ADDWPT {acid} H_4, 400, {v}')
+        bs.stack.stack(f'ADDWPT {acid} H_7, 400, {v}')
         bs.stack.stack(f'DUMPRTE {acid}')
         bs.stack.stack(f'VNAV {acid} ON')
 
@@ -181,14 +212,14 @@ def add_plane(id,type):
         f.write(f"00:00:{id}.00>DEST {acid} H_8\n")
         f.write(f"00:00:{id}.00>SPD {acid} 30\n")
         f.write(f"00:00:{id}.00>ALT {acid} 400\n")
-        f.write(f"00:00:{id}.00>ADDWPT {acid} I_5, 400, 40\n")
-        f.write(f"00:00:{id}.00>ADDWPT {acid} I_4, 400, 40\n")
-        f.write(f"00:00:{id}.00>ADDWPT {acid} I_3, 400, 40\n")
-        f.write(f"00:00:{id}.00>ADDWPT {acid} I_2, 400, 40\n")
-        f.write(f"00:00:{id}.00>ADDWPT {acid} I_1, 400, 40\n")
-        f.write(f"00:00:{id}.00>ADDWPT {acid} H_2, 400, 40\n")
-        f.write(f"00:00:{id}.00>ADDWPT {acid} H_4, 400, 40\n")
-        f.write(f"00:00:{id}.00>ADDWPT {acid} H_6, 400, 40\n")
+        f.write(f"00:00:{id}.00>ADDWPT {acid} I_5, 400, {v}\n")
+        f.write(f"00:00:{id}.00>ADDWPT {acid} I_4, 400, {v}\n")
+        f.write(f"00:00:{id}.00>ADDWPT {acid} I_3, 400, {v}\n")
+        f.write(f"00:00:{id}.00>ADDWPT {acid} I_2, 400, {v}\n")
+        f.write(f"00:00:{id}.00>ADDWPT {acid} I_1, 400, {v}\n")
+        f.write(f"00:00:{id}.00>ADDWPT {acid} H_2, 400, {v}\n")
+        f.write(f"00:00:{id}.00>ADDWPT {acid} H_4, 400, {v}\n")
+        f.write(f"00:00:{id}.00>ADDWPT {acid} H_7, 400, {v}\n")
         f.write(f"00:00:{id}.00>VNAV {acid} ON\n")
         f.write(f"00:00:{id}.00>DUMPRTE {acid}\n")
 
@@ -197,7 +228,7 @@ def add_plane(id,type):
 
 t_max = 3000                   #seconds
 n_steps = int(t_max + 1)
-AC_nums = [10,10,20]
+AC_nums = [10,10,50]
 AC_intervals = [50,50,50]         #seconds
 departure_safety_bound = 150   #seconds
 max_speed = 40                 #kts
@@ -209,15 +240,19 @@ LOS_dist = 100                 #meters
 Warning_dist = 600             #meters
 SpeedUp_dist = 800             #meters
 merge_capacity = 1
-#TODO: test the entering time
-merge_time = [657,1026,404]              #seconds
-check_block_size = 150         #seconds
-check_block = np.zeros(round(t_max*2/check_block_size))
+
+Cross_time_A = 576             #seconds
+Cross_time_G = 497             #seconds
+Merge_time_G = 1261            #seconds
+Merge_time_I = 448
+check_block_size = 60         #seconds
+Cross_check_block = np.zeros(round(t_max*2/check_block_size))
+Merge_check_block = np.zeros(round(t_max*2/check_block_size))
 
 
 f=open("scenario/interface_NYC.scn","w")
 init_bs()
-check_block[int(merge_time[0]/check_block_size)]+=1
+Cross_check_block[int(Cross_time_A/check_block_size)]+=1
 
 def run_sim(check_point_capacity,block_size,number_list=AC_nums,interval_list=AC_intervals):
     NMAC = 0
@@ -245,62 +280,190 @@ def run_sim(check_point_capacity,block_size,number_list=AC_nums,interval_list=AC
         spd_list=bs.traf.tas
 
         ## add aircraft based on demand##
-        if A_current_ac<A_number:
-            if i>=A_depart_time[A_current_ac]:
-                if len(lat_list)>=1:
-                    try:
-                        A_ind = ac_list.index(A_id)
-                    except:
-                        A_ind = -1
-                    dep_dist=get_distance([lat_list[A_ind],lon_list[A_ind],alt_list[A_ind]],[40.5959242,-74.0465984,0])
+        first = random.choice([0,1,2])
+        if first == 0:
+            if A_current_ac<A_number:
+                if i>=A_depart_time[A_current_ac]:
+                    if len(lat_list)>=1:
+                        try:
+                            A_ind = ac_list.index(A_id)
+                        except:
+                            A_ind = -1
+                        dep_dist=get_distance([lat_list[A_ind],lon_list[A_ind],alt_list[A_ind]],[40.5959242,-74.0465984,0])
 
-                    if dep_dist>departure_safety_bound and \
-                            check_block[int((merge_time[0]+A_depart_time[A_current_ac])/block_size)]<=check_point_capacity:
-                        bs.traf.cre(acid="A"+str(i), actype="ELE01",aclat=40.5959242,aclon=-74.0465984,acalt=0,acspd=3)
-                        add_plane(i,"A")
-                        A_id = "A"+str(i)
-                        check_block[int((merge_time[0]+A_depart_time[A_current_ac])/block_size)]+=1
-                        A_current_ac+=1
-                    else:
-                        A_depart_time[A_current_ac:]=list(map(lambda x:x+1,A_depart_time[A_current_ac:]))
+                        if dep_dist>departure_safety_bound and \
+                                Cross_check_block[int((Cross_time_A+A_depart_time[A_current_ac])/block_size)]<check_point_capacity:
+                            bs.traf.cre(acid="A"+str(i), actype="ELE01",aclat=40.5959242,aclon=-74.0465984,acalt=0,acspd=3)
+                            add_plane(i,"A")
+                            A_id = "A"+str(i)
+                            Cross_check_block[int((Cross_time_A+A_depart_time[A_current_ac])/block_size)]+=1
+                            A_current_ac+=1
+                        else:
+                            A_depart_time[A_current_ac:]=list(map(lambda x:x+1,A_depart_time[A_current_ac:]))
 
-        if G_current_ac<G_number:
-            if i>=G_depart_time[G_current_ac]:
-                if len(lat_list)>=1:
-                    try:
-                        G_ind = ac_list.index(G_id)
-                    except:
-                        G_ind = -1
-                    dep_dist=get_distance([lat_list[G_ind],lon_list[G_ind],alt_list[G_ind]],[40.6964385,-74.1231651,0])
+            if G_current_ac<G_number:
+                if i>=G_depart_time[G_current_ac]:
+                    if len(lat_list)>=1:
+                        try:
+                            G_ind = ac_list.index(G_id)
+                        except:
+                            G_ind = -1
+                        dep_dist=get_distance([lat_list[G_ind],lon_list[G_ind],alt_list[G_ind]],[40.6964385,-74.1231651,0])
 
-                    if dep_dist>departure_safety_bound and \
-                            check_block[int((merge_time[1]+G_depart_time[G_current_ac])/block_size)]<=check_point_capacity:
-                        bs.traf.cre(acid="A"+str(i), actype="ELE01",aclat=40.6964385,aclon=-74.1231651,acalt=0,acspd=3)
-                        add_plane(i,"G")
-                        G_id = "A"+str(i)
-                        check_block[int((merge_time[1]+G_depart_time[G_current_ac])/block_size)]+=1
-                        G_current_ac+=1
-                    else:
-                        G_depart_time[G_current_ac:]=list(map(lambda x:x+1,G_depart_time[G_current_ac:]))
+                        if dep_dist>departure_safety_bound and \
+                                Merge_check_block[int((Merge_time_G+G_depart_time[G_current_ac])/block_size)]<check_point_capacity and \
+                                Cross_check_block[int((Cross_time_G+G_depart_time[G_current_ac])/block_size)]<check_point_capacity:
+                            bs.traf.cre(acid="G"+str(i), actype="ELE01",aclat=40.6964385,aclon=-74.1231651,acalt=0,acspd=3)
+                            add_plane(i,"G")
+                            G_id = "G"+str(i)
+                            Merge_check_block[int((Merge_time_G+G_depart_time[G_current_ac])/block_size)]+=1
+                            Cross_check_block[int((Cross_time_G+G_depart_time[G_current_ac])/block_size)]+=1
+                            G_current_ac+=1
+                        else:
+                            G_depart_time[G_current_ac:]=list(map(lambda x:x+1,G_depart_time[G_current_ac:]))
 
-        if I_current_ac<I_number:
-            if i>=I_depart_time[I_current_ac]:
-                if len(lat_list)>=1:
-                    try:
-                        I_ind = ac_list.index(I_id)
-                    except:
-                        I_ind = -1
-                    dep_dist=get_distance([lat_list[I_ind],lon_list[I_ind],alt_list[I_ind]],[40.749573,-73.901223,0])
+            if I_current_ac<I_number:
+                if i>=I_depart_time[I_current_ac]:
+                    if len(lat_list)>=1:
+                        try:
+                            I_ind = ac_list.index(I_id)
+                        except:
+                            I_ind = -1
+                        dep_dist=get_distance([lat_list[I_ind],lon_list[I_ind],alt_list[I_ind]],[40.749573,-73.901223,0])
 
-                    if dep_dist>departure_safety_bound and \
-                            check_block[int((merge_time[2]+I_depart_time[I_current_ac])/block_size)]<=check_point_capacity:
-                        bs.traf.cre(acid="A"+str(i), actype="ELE01",aclat=40.749573,aclon=-73.901223,acalt=0,acspd=3)
-                        add_plane(i,"I")
-                        I_id = "A"+str(i)
-                        check_block[int((merge_time[2]+I_depart_time[I_current_ac])/block_size)]+=1
+                        if dep_dist>departure_safety_bound and \
+                                Merge_check_block[int((Merge_time_I+I_depart_time[I_current_ac])/block_size)]<check_point_capacity:
+                            bs.traf.cre(acid="I"+str(i), actype="ELE01",aclat=40.749573,aclon=-73.901223,acalt=0,acspd=3)
+                            add_plane(i,"I")
+                            I_id = "I"+str(i)
+                            Merge_check_block[int((Merge_time_I+I_depart_time[I_current_ac])/block_size)]+=1
                         I_current_ac+=1
                     else:
                         I_depart_time[I_current_ac:]=list(map(lambda x:x+1,I_depart_time[I_current_ac:]))
+
+        if first == 1:
+
+            if G_current_ac<G_number:
+                if i>=G_depart_time[G_current_ac]:
+                    if len(lat_list)>=1:
+                        try:
+                            G_ind = ac_list.index(G_id)
+                        except:
+                            G_ind = -1
+                        dep_dist=get_distance([lat_list[G_ind],lon_list[G_ind],alt_list[G_ind]],[40.6964385,-74.1231651,0])
+
+                        if dep_dist>departure_safety_bound and \
+                                Merge_check_block[int((Merge_time_G+G_depart_time[G_current_ac])/block_size)]<check_point_capacity and \
+                                Cross_check_block[int((Cross_time_G+G_depart_time[G_current_ac])/block_size)]<check_point_capacity:
+                            bs.traf.cre(acid="G"+str(i), actype="ELE01",aclat=40.6964385,aclon=-74.1231651,acalt=0,acspd=3)
+                            add_plane(i,"G")
+                            G_id = "G"+str(i)
+                            Merge_check_block[int((Merge_time_G+G_depart_time[G_current_ac])/block_size)]+=1
+                            Cross_check_block[int((Cross_time_G+G_depart_time[G_current_ac])/block_size)]+=1
+                            G_current_ac+=1
+                        else:
+                            G_depart_time[G_current_ac:]=list(map(lambda x:x+1,G_depart_time[G_current_ac:]))
+
+
+            if A_current_ac<A_number:
+                if i>=A_depart_time[A_current_ac]:
+                    if len(lat_list)>=1:
+                        try:
+                            A_ind = ac_list.index(A_id)
+                        except:
+                            A_ind = -1
+                        dep_dist=get_distance([lat_list[A_ind],lon_list[A_ind],alt_list[A_ind]],[40.5959242,-74.0465984,0])
+
+                        if dep_dist>departure_safety_bound and \
+                                Cross_check_block[int((Cross_time_A+A_depart_time[A_current_ac])/block_size)]<check_point_capacity:
+                            bs.traf.cre(acid="A"+str(i), actype="ELE01",aclat=40.5959242,aclon=-74.0465984,acalt=0,acspd=3)
+                            add_plane(i,"A")
+                            A_id = "A"+str(i)
+                            Cross_check_block[int((Cross_time_A+A_depart_time[A_current_ac])/block_size)]+=1
+                            A_current_ac+=1
+                        else:
+                            A_depart_time[A_current_ac:]=list(map(lambda x:x+1,A_depart_time[A_current_ac:]))
+
+            if I_current_ac<I_number:
+                if i>=I_depart_time[I_current_ac]:
+                    if len(lat_list)>=1:
+                        try:
+                            I_ind = ac_list.index(I_id)
+                        except:
+                            I_ind = -1
+                        dep_dist=get_distance([lat_list[I_ind],lon_list[I_ind],alt_list[I_ind]],[40.749573,-73.901223,0])
+
+                        if dep_dist>departure_safety_bound and \
+                                Merge_check_block[int((Merge_time_I+I_depart_time[I_current_ac])/block_size)]<check_point_capacity:
+                            bs.traf.cre(acid="I"+str(i), actype="ELE01",aclat=40.749573,aclon=-73.901223,acalt=0,acspd=3)
+                            add_plane(i,"I")
+                            I_id = "I"+str(i)
+                            Merge_check_block[int((Merge_time_I+I_depart_time[I_current_ac])/block_size)]+=1
+                        I_current_ac+=1
+                    else:
+                        I_depart_time[I_current_ac:]=list(map(lambda x:x+1,I_depart_time[I_current_ac:]))
+
+        if first == 2:
+
+            if I_current_ac<I_number:
+                if i>=I_depart_time[I_current_ac]:
+                    if len(lat_list)>=1:
+                        try:
+                            I_ind = ac_list.index(I_id)
+                        except:
+                            I_ind = -1
+                        dep_dist=get_distance([lat_list[I_ind],lon_list[I_ind],alt_list[I_ind]],[40.749573,-73.901223,0])
+
+                        if dep_dist>departure_safety_bound and \
+                                Merge_check_block[int((Merge_time_I+I_depart_time[I_current_ac])/block_size)]<check_point_capacity:
+                            bs.traf.cre(acid="I"+str(i), actype="ELE01",aclat=40.749573,aclon=-73.901223,acalt=0,acspd=3)
+                            add_plane(i,"I")
+                            I_id = "I"+str(i)
+                            Merge_check_block[int((Merge_time_I+I_depart_time[I_current_ac])/block_size)]+=1
+                        I_current_ac+=1
+                    else:
+                        I_depart_time[I_current_ac:]=list(map(lambda x:x+1,I_depart_time[I_current_ac:]))
+
+            if A_current_ac<A_number:
+                if i>=A_depart_time[A_current_ac]:
+                    if len(lat_list)>=1:
+                        try:
+                            A_ind = ac_list.index(A_id)
+                        except:
+                            A_ind = -1
+                        dep_dist=get_distance([lat_list[A_ind],lon_list[A_ind],alt_list[A_ind]],[40.5959242,-74.0465984,0])
+
+                        if dep_dist>departure_safety_bound and \
+                                Cross_check_block[int((Cross_time_A+A_depart_time[A_current_ac])/block_size)]<check_point_capacity:
+                            bs.traf.cre(acid="A"+str(i), actype="ELE01",aclat=40.5959242,aclon=-74.0465984,acalt=0,acspd=3)
+                            add_plane(i,"A")
+                            A_id = "A"+str(i)
+                            Cross_check_block[int((Cross_time_A+A_depart_time[A_current_ac])/block_size)]+=1
+                            A_current_ac+=1
+                        else:
+                            A_depart_time[A_current_ac:]=list(map(lambda x:x+1,A_depart_time[A_current_ac:]))
+
+            if G_current_ac<G_number:
+                if i>=G_depart_time[G_current_ac]:
+                    if len(lat_list)>=1:
+                        try:
+                            G_ind = ac_list.index(G_id)
+                        except:
+                            G_ind = -1
+                        dep_dist=get_distance([lat_list[G_ind],lon_list[G_ind],alt_list[G_ind]],[40.6964385,-74.1231651,0])
+
+                        if dep_dist>departure_safety_bound and \
+                                Merge_check_block[int((Merge_time_G+G_depart_time[G_current_ac])/block_size)]<check_point_capacity and \
+                                Cross_check_block[int((Cross_time_G+G_depart_time[G_current_ac])/block_size)]<check_point_capacity:
+                            bs.traf.cre(acid="G"+str(i), actype="ELE01",aclat=40.6964385,aclon=-74.1231651,acalt=0,acspd=3)
+                            add_plane(i,"G")
+                            G_id = "G"+str(i)
+                            Merge_check_block[int((Merge_time_G+G_depart_time[G_current_ac])/block_size)]+=1
+                            Cross_check_block[int((Cross_time_G+G_depart_time[G_current_ac])/block_size)]+=1
+                            G_current_ac+=1
+                        else:
+                            G_depart_time[G_current_ac:]=list(map(lambda x:x+1,G_depart_time[G_current_ac:]))
+
 
         # ## in-air deconfliction ##
         if i%check_inv==0:
