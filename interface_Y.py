@@ -149,9 +149,9 @@ def add_plane(id,type):
 
 t_max = 3000                   #seconds
 n_steps = int(t_max + 1)
-inv = int(sys.argv[1])
+# inv = int(sys.argv[1])
 AC_nums = [10,10]
-AC_intervals = [inv,inv]         #seconds
+AC_intervals = [60,60]         #seconds
 departure_safety_bound = 150   #seconds
 max_speed = 40                 #kts
 min_speed = 3                  #kts
@@ -162,7 +162,7 @@ LOS_dist = 100                 #meters
 Warning_dist = 600             #meters
 SpeedUp_dist = 800
 #meters
-merge_capacity = 20
+merge_capacity = 1
 merge_time = 1015              #seconds
 check_block_size =  70       #seconds
 
@@ -372,10 +372,10 @@ print(f"number of MAC:{safety[1]}")
 print(f"average delay:{round(efficiency)} s")
 print("Flight interval=",inv)
 print("*******************************")
-g=open("Interval data.txt","a")
-g.write(f"{safety[0]},{inv},LOS\n")
-g.write(f"{safety[1]},{inv},NMAC\n")
-g.write(f"{round(efficiency)},{inv},Ground Delay\n")
+# g=open("Interval data.txt","a")
+# g.write(f"{safety[0]},{inv},LOS\n")
+# g.write(f"{safety[1]},{inv},NMAC\n")
+# g.write(f"{round(efficiency)},{inv},Ground Delay\n")
 
 # plt.bar(range(len(LOS_list)), LOS_list)
 # plt.title("Los")

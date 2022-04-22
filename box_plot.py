@@ -79,6 +79,40 @@ def plot_interval():
     plt.ylabel("Average Ground Delay (seconds)")
     plt.xlabel("Flight Departure Average Interval (seconds)")
     plt.show()
-plot_capacity()
+
+def plot_NYC():
+    data = pd.read_csv("exp4_NYC.csv")
+    LOS1 =  data[data['Event Type']=='LOS with DCB']
+    LOS2 =  data[data['Event Type']=='LOS without DCB']
+    LOS = pd.concat([LOS1,LOS2])
+
+    NMAC1 = data[data['Event Type']=='NMAC with DCB']
+    NMAC2 = data[data['Event Type']=='NMAC without DCB']
+    NMAC = pd.concat([NMAC1,NMAC2])
+
+    Ground_Delay1 = data[data['Event Type']=='Ground Delay with DCB']
+    Ground_Delay2 = data[data['Event Type']=='Ground Delay without DCB']
+    Ground_Delay = pd.concat([Ground_Delay1,Ground_Delay2])
+
+    ax = sns.boxplot(x="GROUP", y="Number of Event",
+                     data=LOS,hue='Event Type',color="steelblue",showfliers = False)
+    plt.title("NYC LOS")
+    plt.ylabel("Number of LOS")
+    plt.xlabel("Test Group")
+    plt.show()
+    ax = sns.boxplot(x="GROUP", y="Number of Event",
+                     data=NMAC,hue='Event Type',color="tan",showfliers = False)
+    plt.title("NYC NMAC")
+    plt.ylabel("Number of NMAC")
+    plt.xlabel("Test Group")
+    plt.show()
+    ax = sns.boxplot(x="GROUP", y="Number of Event",
+                     data=Ground_Delay,hue='Event Type',color="mediumseagreen",showfliers = False)
+    plt.title("NYC Ground Delay")
+    plt.ylabel("Average Ground Delay (seconds)")
+    plt.xlabel("Test Group")
+    plt.show()
+# plot_capacity()
 # plot_block()
 # plot_interval()
+plot_NYC()
