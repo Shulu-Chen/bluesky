@@ -67,7 +67,7 @@ def init_bs():
     f.write("00:00:00.00>TAXI OFF 4\n")
     # f.write("0:00:00.00>ASAS ON \n")
     f.write("0:00:00.00>PAN 0,0.2 \n")
-    f.write("0:00:00.00>ZOOM 2 \n")
+    f.write("0:00:00.00>ZOOM 2.5 \n")
     # f.write("0:00:00.00>FF \n")
     f.write("\n")
 
@@ -111,8 +111,8 @@ def add_plane(id):
 t_max = 3000
 n_steps = int(t_max + 1)
 ac_number = 9
-flight_interval = 50
-departure_safety_bound = 150
+flight_interval = 300
+departure_safety_bound = 300
 max_speed = 40
 min_speed = 3
 delta_v = 5

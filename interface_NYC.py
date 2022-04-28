@@ -68,6 +68,8 @@ def init_bs():
     # f.write("0:00:00.00>ASAS ON \n")
     f.write("0:00:00.00>PAN 40.689582,-73.886988 \n")
     f.write("0:00:00.00>ZOOM 2 \n")
+    f.write("00:00:00.00>CIRCLE a, 40.689582,-73.886988 0.2\n")
+    f.write("00:00:00.00>CIRCLE b, 40.678505,-74.029101 0.2\n")
     # f.write("0:00:00.00>FF \n")
     f.write("\n")
 
@@ -105,16 +107,16 @@ def add_plane(id,type):
         f.write(f"00:00:{id}.00>ADDWPT {acid} L_4, 400, {v}\n")
 
         v = random.choice(speed_list)
-        bs.stack.stack(f'ADDWPT {acid} L_3, 400, {v}')
-        f.write(f"00:00:{id}.00>ADDWPT {acid} L_3, 400, {v}\n")
+        bs.stack.stack(f'ADDWPT {acid} G_4, 400, {v}')
+        f.write(f"00:00:{id}.00>ADDWPT {acid} G_4, 400, {v}\n")
 
         v = random.choice(speed_list)
         bs.stack.stack(f'ADDWPT {acid} L_2, 400, {v}')
         f.write(f"00:00:{id}.00>ADDWPT {acid} L_2, 400, {v}\n")
 
         v = random.choice(speed_list)
-        bs.stack.stack(f'ADDWPT {acid} L_1, 400, {v}')
-        f.write(f"00:00:{id}.00>ADDWPT {acid} L_1, 400, {v}\n")
+        bs.stack.stack(f'ADDWPT {acid} A_1, 400, {v}')
+        f.write(f"00:00:{id}.00>ADDWPT {acid} A_1, 400, {v}\n")
 
         v = random.choice(speed_list)
         bs.stack.stack(f'ADDWPT {acid} A_2, 400, {v}')
@@ -199,7 +201,7 @@ def add_plane(id,type):
         bs.stack.stack(f'ADDWPT {acid} I_4, 400, {v}')
         bs.stack.stack(f'ADDWPT {acid} I_3, 400, {v}')
         bs.stack.stack(f'ADDWPT {acid} I_2, 400, {v}')
-        bs.stack.stack(f'ADDWPT {acid} I_1, 400, {v}')
+        bs.stack.stack(f'ADDWPT {acid} G_1, 400, {v}')
         bs.stack.stack(f'ADDWPT {acid} H_2, 400, {v}')
         bs.stack.stack(f'ADDWPT {acid} H_4, 400, {v}')
         bs.stack.stack(f'ADDWPT {acid} H_7, 400, {v}')
@@ -216,7 +218,7 @@ def add_plane(id,type):
         f.write(f"00:00:{id}.00>ADDWPT {acid} I_4, 400, {v}\n")
         f.write(f"00:00:{id}.00>ADDWPT {acid} I_3, 400, {v}\n")
         f.write(f"00:00:{id}.00>ADDWPT {acid} I_2, 400, {v}\n")
-        f.write(f"00:00:{id}.00>ADDWPT {acid} I_1, 400, {v}\n")
+        f.write(f"00:00:{id}.00>ADDWPT {acid} G_1, 400, {v}\n")
         f.write(f"00:00:{id}.00>ADDWPT {acid} H_2, 400, {v}\n")
         f.write(f"00:00:{id}.00>ADDWPT {acid} H_4, 400, {v}\n")
         f.write(f"00:00:{id}.00>ADDWPT {acid} H_7, 400, {v}\n")

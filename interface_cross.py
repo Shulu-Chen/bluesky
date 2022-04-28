@@ -56,7 +56,8 @@ f.write("00:00:00.00>TRAILS ON \n")
 f.write("00:00:00.00>TAXI OFF 4\n")
 # f.write("0:00:00.00>ASAS ON \n")
 f.write("0:00:00.00>PAN 0,0.2 \n")
-f.write("0:00:00.00>ZOOM 2 \n")
+f.write("0:00:00.00>ZOOM 2.5 \n")
+f.write("00:00:00.00>CIRCLE a, 0.0,0.1 0.2\n")
 # f.write("0:00:00.00>FF \n")
 
 f.write("\n")
@@ -89,7 +90,7 @@ def add_plane(id,type):
         bs.stack.stack(f'DEST {acid} M_5')
         bs.stack.stack(f'SPD {acid} 30')
         bs.stack.stack(f'ALT {acid} 400')
-        bs.stack.stack(f'ADDWPT {acid} M_3, 400, 40')
+        bs.stack.stack(f'ADDWPT {acid} N_2, 400, 40')
         bs.stack.stack(f'ADDWPT {acid} M_4, 400, 40')
         bs.stack.stack(f'DUMPRTE {acid}')
         bs.stack.stack(f'VNAV {acid} ON')
@@ -99,7 +100,7 @@ def add_plane(id,type):
         f.write(f"00:00:{id}.00>DEST {acid} M_5\n")
         f.write(f"00:00:{id}.00>SPD {acid} 30\n")
         f.write(f"00:00:{id}.00>ALT {acid} 400\n")
-        f.write(f"00:00:{id}.00>ADDWPT {acid} M_3, 400, 40\n")
+        f.write(f"00:00:{id}.00>ADDWPT {acid} N_2, 400, 40\n")
         f.write(f"00:00:{id}.00>ADDWPT {acid} M_4, 400, 40\n")
         f.write(f"00:00:{id}.00>VNAV {acid} ON\n")
         f.write(f"00:00:{id}.00>DUMPRTE {acid}\n")
@@ -118,10 +119,10 @@ n_steps = int(t_max + 1)
 t = np.linspace(0, t_max, n_steps)
 
 N_number =10
-N_flight_interval = 80
+N_flight_interval = 300
 M_number = 10
-M_flight_interval = 80
-departure_safety_bound = 150
+M_flight_interval = 300
+departure_safety_bound = 250
 
 # Generate the demand based on exponential distribution, lambda-number of flight per second, lambda=0.1--flight interval=10s
 def generate_interval(interval,number):

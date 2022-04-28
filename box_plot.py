@@ -15,23 +15,36 @@ def plot_capacity():
     data = pd.read_csv("exp1_capacity.csv")
     LOS =  data[data['Event Type']=='LOS']
     NMAC = data[data['Event Type']=='NMAC']
-    Ground_Delay = data[data['Event Type']=='Ground Delay']
+    Ground_Delay = data[data['Event Type']=='Ground_Delay']
 
+    plt.figure(figsize=(10, 8))
     ax = sns.boxplot(x="Capacity of Each DCB Block", y="Number of Event",
                      data=LOS,color="steelblue",showfliers = False)
-    plt.title("Capacity VS LOS")
-    plt.ylabel("Number of LOS")
-    plt.show()
+    plt.xticks(fontsize=19)
+    plt.yticks(fontsize=19)
+    ax.set_xlabel("Capacity of Each DCB Block",fontsize=19)
+    ax.set_ylabel("Number of LOS",fontsize=19)
+    plt.savefig('image\\exp1_los.png')
+
+
+
+    plt.figure(figsize=(10, 8))
     ax = sns.boxplot(x="Capacity of Each DCB Block", y="Number of Event",
                      data=NMAC,color="tan",showfliers = False)
-    plt.title("Capacity VS NMAC")
-    plt.ylabel("Number of NMAC")
-    plt.show()
+    plt.xticks(fontsize=19)
+    plt.yticks(fontsize=19)
+    ax.set_xlabel("Capacity of Each DCB Block",fontsize=19)
+    ax.set_ylabel("Number of NMAC",fontsize=19)
+    plt.savefig('image\\exp1_nmac.png')
+
+    plt.figure(figsize=(10, 8))
     ax = sns.boxplot(x="Capacity of Each DCB Block", y="Number of Event",
                      data=Ground_Delay,color="mediumseagreen",showfliers = False)
-    plt.title("Capacity VS Ground Delay")
-    plt.ylabel("Average Ground Delay (seconds)")
-    plt.show()
+    plt.xticks(fontsize=19)
+    plt.yticks(fontsize=19)
+    ax.set_xlabel("Capacity of Each DCB Block",fontsize=19)
+    ax.set_ylabel("Average Ground Delay (seconds)",fontsize=19)
+    plt.savefig('image\\exp1_delay.png')
 
 def plot_block():
     data = pd.read_csv("exp2_block.csv")
@@ -39,21 +52,36 @@ def plot_block():
     NMAC = data[data['Event Type']=='NMAC']
     Ground_Delay = data[data['Event Type']=='Ground Delay']
 
+    plt.figure(figsize=(10, 8))
     ax = sns.boxplot(x="Size of Each DCB Block", y="Number of Event",
                      data=LOS,color="steelblue",showfliers = False)
-    plt.title("Block Size VS LOS")
-    plt.ylabel("Number of LOS")
-    plt.show()
+    plt.xticks(fontsize=19)
+    plt.yticks(fontsize=19)
+    ax.set_xlabel("Size of Each DCB Block",fontsize=19)
+    ax.set_ylabel("Number of LOS",fontsize=19)
+    # ax.legend(fontsize=19)
+    plt.savefig('image\\exp2_los.png')
+
+    plt.figure(figsize=(10, 8))
     ax = sns.boxplot(x="Size of Each DCB Block", y="Number of Event",
                      data=NMAC,color="tan",showfliers = False)
-    plt.title("Block Size VS NMAC")
-    plt.ylabel("Number of NMAC")
-    plt.show()
+
+
+    plt.xticks(fontsize=19)
+    plt.yticks(fontsize=19)
+    ax.set_xlabel("Size of Each DCB Block",fontsize=19)
+    ax.set_ylabel("Number of NMAC",fontsize=19)
+    plt.savefig('image\\exp2_nmac.png')
+
+    plt.figure(figsize=(10, 8))
     ax = sns.boxplot(x="Size of Each DCB Block", y="Number of Event",
                      data=Ground_Delay,color="mediumseagreen",showfliers = False)
-    plt.title("Block Size VS Ground Delay")
-    plt.ylabel("Average Ground Delay (seconds)")
-    plt.show()
+    plt.xticks(fontsize=19)
+    plt.yticks(fontsize=19)
+    ax.set_xlabel("Size of Each DCB Block",fontsize=19)
+    ax.set_ylabel("Average Ground Delay (seconds)",fontsize=19)
+    plt.savefig('image\\exp2_delay.png')
+
 
 def plot_interval():
     data = pd.read_csv("exp3_interval.csv")
@@ -61,24 +89,33 @@ def plot_interval():
     NMAC = data[data['Event Type']=='NMAC']
     Ground_Delay = data[data['Event Type']=='Ground Delay']
 
+    plt.figure(figsize=(10, 8))
     ax = sns.boxplot(x="Interval of Each DCB Block", y="Number of Event",
                      data=LOS,color="steelblue",showfliers = False)
-    plt.title("Departure Interval VS LOS")
-    plt.ylabel("Number of LOS")
-    plt.xlabel("Flight Departure Average Interval (seconds)")
-    plt.show()
+    plt.xticks(fontsize=19)
+    plt.yticks(fontsize=19)
+    ax.set_xlabel("Flight Departure Average Interval (seconds)",fontsize=19)
+    ax.set_ylabel("Number of LOS",fontsize=19)
+    plt.savefig('image\\exp3_los.png')
+
+    plt.figure(figsize=(10, 8))
     ax = sns.boxplot(x="Interval of Each DCB Block", y="Number of Event",
                      data=NMAC,color="tan",showfliers = False)
-    plt.title("Departure Interval VS NMAC")
-    plt.ylabel("Number of NMAC")
-    plt.xlabel("Flight Departure Average Interval (seconds)")
-    plt.show()
+    plt.xticks(fontsize=19)
+    plt.yticks(fontsize=19)
+    ax.set_xlabel("Flight Departure Average Interval (seconds)",fontsize=19)
+    ax.set_ylabel("Number of NMAC",fontsize=19)
+    plt.savefig('image\\exp3_nmac.png')
+
+    plt.figure(figsize=(10, 8))
     ax = sns.boxplot(x="Interval of Each DCB Block", y="Number of Event",
                      data=Ground_Delay,color="mediumseagreen",showfliers = False)
-    plt.title("Departure Interval VS Ground Delay")
-    plt.ylabel("Average Ground Delay (seconds)")
-    plt.xlabel("Flight Departure Average Interval (seconds)")
-    plt.show()
+    plt.xticks(fontsize=19)
+    plt.yticks(fontsize=19)
+    ax.set_xlabel("Flight Departure Average Interval (seconds)",fontsize=19)
+    ax.set_ylabel("Average Ground Delay (seconds)",fontsize=19)
+    plt.savefig('image\\exp3_delay.png')
+
 
 def plot_NYC():
     data = pd.read_csv("exp4_NYC.csv")
@@ -94,25 +131,39 @@ def plot_NYC():
     Ground_Delay2 = data[data['Event Type']=='Ground Delay without DCB']
     Ground_Delay = pd.concat([Ground_Delay1,Ground_Delay2])
 
+    plt.figure(figsize=(10, 8))
     ax = sns.boxplot(x="GROUP", y="Number of Event",
                      data=LOS,hue='Event Type',color="steelblue",showfliers = False)
-    plt.title("NYC LOS")
-    plt.ylabel("Number of LOS")
-    plt.xlabel("Test Group")
-    plt.show()
+    plt.xticks(fontsize=19)
+    plt.yticks(fontsize=19)
+    ax.set_xlabel("Test Group",fontsize=19)
+    ax.set_ylabel("Number of LOS",fontsize=19)
+    ax.legend(fontsize=19)
+    plt.savefig('image\\exp4_los.png')
+
+
+    plt.figure(figsize=(10, 8))
     ax = sns.boxplot(x="GROUP", y="Number of Event",
                      data=NMAC,hue='Event Type',color="tan",showfliers = False)
-    plt.title("NYC NMAC")
-    plt.ylabel("Number of NMAC")
-    plt.xlabel("Test Group")
-    plt.show()
+    plt.xticks(fontsize=19)
+    plt.yticks(fontsize=19)
+    ax.set_xlabel("Test Group",fontsize=19)
+    ax.set_ylabel("Number of NMAC",fontsize=19)
+    ax.legend(fontsize=19)
+    plt.savefig('image\\exp4_nmac.png')
+
+
+    plt.figure(figsize=(10, 8))
     ax = sns.boxplot(x="GROUP", y="Number of Event",
                      data=Ground_Delay,hue='Event Type',color="mediumseagreen",showfliers = False)
-    plt.title("NYC Ground Delay")
-    plt.ylabel("Average Ground Delay (seconds)")
-    plt.xlabel("Test Group")
-    plt.show()
-# plot_capacity()
-# plot_block()
-# plot_interval()
+    plt.xticks(fontsize=19)
+    plt.yticks(fontsize=19)
+    ax.set_xlabel("Test Group",fontsize=19)
+    ax.set_ylabel("Average Ground Delay (seconds)",fontsize=19)
+    ax.legend(fontsize=19)
+    plt.savefig('image\\exp4_dalay.png')
+
+plot_capacity()
+plot_block()
+plot_interval()
 plot_NYC()
