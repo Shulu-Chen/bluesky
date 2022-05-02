@@ -54,7 +54,6 @@ def init_bs():
     # bs.traf.cre(acid="G"+str(0), actype="ELE01",aclat=40.6964385, aclon=-74.1231651)
     add_plane(0,"A")
 
-
 def add_plane(id,type):
     speed_list=[30,31,32,33,34]
 
@@ -144,7 +143,6 @@ def add_plane(id,type):
         bs.stack.stack(f'DUMPRTE {acid}')
         bs.stack.stack(f'VNAV {acid} ON')
 
-
 t_max = 6000                   #seconds
 n_steps = int(t_max + 1)
 AC_nums = [10,10,30]
@@ -159,13 +157,22 @@ NMAC_dist = 10                 #meters
 LOS_dist = 100                 #meters
 Warning_dist = 600             #meters
 SpeedUp_dist = 800             #meters
-merge_capacity = 1
+
 
 Cross_time_A = 576             #seconds
 Cross_time_G = 497             #seconds
 Merge_time_G = 1261            #seconds
 Merge_time_I = 448
-check_block_size = 60         #seconds
+type = int(sys.argv[1])
+if type = 0:
+    merge_capacity = 1
+    check_block_size = 70         #seconds
+elif type = 1:
+    merge_capacity = 2
+    check_block_size = 140         #seconds
+elif type = 2:
+    merge_capacity = 50
+    check_block_size = 140         #seconds
 Cross_check_block = np.zeros(round(t_max*2/check_block_size))
 Merge_check_block = np.zeros(round(t_max*2/check_block_size))
 
@@ -488,7 +495,18 @@ safety,efficiency = run_sim(merge_capacity,check_block_size)
 print(f"number of LOS:{safety[0]}")
 print(f"number of MAC:{safety[1]}")
 print(f"average delay:{round(efficiency)} s")
+print(f"Type={type}")
 g=open("NYC data.txt","a")
-g.write(f"{safety[0]},B,LOS with DCB\n")
-g.write(f"{safety[1]},B,NMAC with DCB\n")
-g.write(f"{round(efficiency)},B,Ground Delay with DCB\n")
+if type = 0:
+    g.write(f"{safety[0]},B,LOS_high\n")
+    g.write(f"{safety[1]},B,NMAC_high\n")
+    g.write(f"{round(efficiency)},B,Delay)_high\n")
+if type = 1:
+    g.write(f"{safety[0]},B,LOS_low\n")
+    g.write(f"{safety[1]},B,NMAC_low\n")
+    g.write(f"{round(efficiency)},B,Delay_low\n")
+if type = 2:
+    g.write(f"{safety[0]},B,LOS_no\n")
+    g.write(f"{safety[1]},B,NMAC_no\n")
+    g.write(f"{round(efficiency)},B,Delay_no\n")
+
