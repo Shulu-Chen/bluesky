@@ -237,7 +237,7 @@ def compute_interval(path):
     # C_list = [1,2,3,4,5,6,7,8,20]
     # S_list = [50,100,150,200,250,300,350,400]
     LOS_mean = []
-    LOS_std = []
+    LOS_sem = []
     NMAC_mean = []
     Ground_Delay_mean = []
 
@@ -246,7 +246,7 @@ def compute_interval(path):
         NMAC_num = NMAC[NMAC['D']==d]
         delay_num = Ground_Delay[Ground_Delay['D']==d]
         LOS_mean.append(np.mean(LOS_num['N']*5/3000))
-        LOS_std.append(st.sem(LOS_num['N']*5/3000))
+        LOS_sem.append(st.sem(LOS_num['N']*5/3000))
         # LOS_std.append(round(np.std(LOS_num['N'])*5/3000,1))
         # conf_intveral = stats.norm.interval(0.9, loc=mean, scale=std)
         NMAC_mean.append(round(np.mean(NMAC_num['N']*5/3000),1))
@@ -254,10 +254,11 @@ def compute_interval(path):
 
     data_points = len(LOS_mean)
 
+
     # predicted expect and calculate confidence interval
     predicted_expect = np.mean(data, 0)
     low_CI_bound, high_CI_bound = st.t.interval(0.9, len(LOS_mean) - 1,
-                                                loc=LOS_mean,scale=LOS_std)
+                                                loc=LOS_mean,scale=LOS_sem)
     # plot confidence interval
     x = np.linspace(10, 125, num=data_points)
 
@@ -268,7 +269,7 @@ def compute_interval(path):
 def plot_exp6():
     LOS_mean1,X1,low_CI1,high_CI1=compute_interval("result\\interval_none.txt")
     LOS_mean2,X2,low_CI2,high_CI2=compute_interval("result\\interval_T1.txt")
-    LOS_mean3,X3,low_CI3,high_CI3=compute_interval("result\\interval_T10.txt")
+    LOS_mean3,X3,low_CI3,high_CI3=compute_interval("result\\interval_T10_2.txt")
     LOS_mean4,X4,low_CI4,high_CI4=compute_interval("result\\interval_C1S50.txt")
     LOS_mean5,X5,low_CI5,high_CI5=compute_interval("result\\interval_C1S100.txt")
     LOS_mean6,X6,low_CI6,high_CI6=compute_interval("result\\interval_C3S150.txt")
@@ -281,14 +282,14 @@ def plot_exp6():
     plt.plot(X1,LOS_mean1, linewidth=3., label='No DCB/Tactical')
     plt.fill_between(X1, low_CI1, high_CI1, alpha=0.5)
 
-    # plt.plot(X2,LOS_mean2, linewidth=3., label='Pure high precision tactical')
+    # plt.plot(X2,LOS_mean2, linewidth=3., label='Tactical, control frequency = 1s')
     # plt.fill_between(X2, low_CI2, high_CI2, alpha=0.5)
 
-    plt.plot(X3,LOS_mean3, linewidth=3., label='Tactical ')
-    plt.fill_between(X3, low_CI3, high_CI3, alpha=0.5)
+    # plt.plot(X8,LOS_mean8, linewidth=3., label='Tactical, control frequency = 5s')
+    # plt.fill_between(X8, low_CI8, high_CI8, alpha=0.5)
 
-    plt.plot(X8,LOS_mean8, linewidth=3., label='Tactical,')
-    plt.fill_between(X8, low_CI8, high_CI8, alpha=0.5)
+    plt.plot(X3,LOS_mean3, linewidth=3., label='Tactical mitigation')
+    plt.fill_between(X3, low_CI3, high_CI3, alpha=0.5)
 
     plt.plot(X7,LOS_mean7, linewidth=3., label='DCB+Tactical,C=3,S=200')
     plt.fill_between(X7, low_CI7, high_CI7, alpha=0.5)
@@ -298,7 +299,7 @@ def plot_exp6():
     plt.ylim(0,35)
     plt.legend(fontsize=22)
     # plt.grid()
-    # plt.savefig('image\\exp6_LOS.png')
+    plt.savefig('image\\exp6_LOS.png')
     plt.show()
     plt.close()
 
@@ -309,6 +310,8 @@ def plot_exp6():
     plt.plot(X1,LOS_mean1, linewidth=3., label='No DCB/Tactical')
 
     plt.plot(X2,LOS_mean2, linewidth=3., label='Tactical, control frequency: 1s')
+
+    plt.plot(X8,LOS_mean8, linewidth=3., label='Tactical, control frequency: 5s')
 
     plt.plot(X3,LOS_mean3, linewidth=3., label='Tactical, control frequency: 10s')
 
@@ -325,7 +328,7 @@ def plot_exp6():
     plt.ylim(0,35)
     plt.legend(fontsize=22)
     # plt.grid()
-    # plt.savefig('image\\exp6_LOS.png')
+    plt.savefig('image\\exp6_multiple.png')
     plt.show()
     plt.close()
 
