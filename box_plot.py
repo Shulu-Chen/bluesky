@@ -170,8 +170,11 @@ def plot_NYC():
     ax.legend(fontsize=19)
     plt.savefig('image\\exp4_dalay.png')
 
-def plot_heatmap(demand):
-    path = f"result\\grid_search_{demand}.txt"
+def plot_heatmap(demand,cross):
+    if not cross:
+        path = f"result\\grid_search_{demand}.txt"
+    else:
+        path = f"result\\GridSearch_cross_{demand}.txt"
     data = pd.read_table(path,sep=',',header=None)
     data.columns=['Number','C','S','Event Type']
     LOS =  data[data['Event Type']=='LOS']
@@ -202,13 +205,16 @@ def plot_heatmap(demand):
     # cbar_kws = { 'ticks' : [0, 30] }
 
 
-    sns.heatmap(data=data,annot=True,cmap="RdBu_r", vmin=0, vmax=25,cbar=True,
+    sns.heatmap(data=data,annot=True,cmap="RdBu_r", vmin=0, vmax=7,cbar=True,
                 cbar_kws={'label': 'LOS Duration (%)'})
 
     plt.ylim(0,8)
     # sns.set_context("set_context","Test Class",fontsize=19)
     plt.ylabel('DCB Window Size (seconds)', fontsize = 19)
-    plt.savefig(f'image\\heatmap_los_{demand}.png')
+    if not cross:
+        plt.savefig(f'image\\heatmap_merge_los_{demand}.png')
+    else:
+        plt.savefig(f'image\\heatmap_cross_los_{demand}.png')
     plt.show()
     plt.close()
 
@@ -216,12 +222,16 @@ def plot_heatmap(demand):
     data=pd.DataFrame(table2)
     data=data.pivot("Block Size","Capacity","NMAC")
     sns.set_context({"figure.figsize":(11,8)})
-    sns.heatmap(data=data,annot=True,cmap="RdBu_r",vmin=0, vmax=5,cbar=True,
+    sns.heatmap(data=data,annot=True,cmap="RdBu_r",vmin=0, vmax=0.9,cbar=True,
                 cbar_kws={'label': 'NMAC Duration (%)'})
     plt.ylim(0,8)
     # sns.set_xlabel("Capacity",fontsize=10)
     plt.ylabel('DCB Window Size (seconds)', fontsize = 19)
-    plt.savefig(f'image\\heatmap_nmac_{demand}.png')
+    if not cross:
+        plt.savefig(f'image\\heatmap_merge_nmac_{demand}.png')
+    else:
+        plt.savefig(f'image\\heatmap_cross_nmac_{demand}.png')
+    plt.show()
 
 def plot_exp5():
     data = pd.read_csv("result\\exp5.csv")
@@ -235,7 +245,7 @@ def plot_exp5():
     ax.set_ylabel("Average Ground Delay (seconds)",fontsize=10)
     plt.savefig('image\\exp5_delay.png')
 
-def compute_interval(path):
+def compute_interval(path,plt_LOS):
     data = pd.read_table(path,sep=',',header=None)
     data.columns=['N','D','Type']
     LOS =  data[data['Type']=='LOS']
@@ -247,31 +257,38 @@ def compute_interval(path):
     LOS_sem = []
     NMAC_mean = []
     Ground_Delay_mean = []
-
+    Ground_Delay_sem = []
     for d in np.arange(10,360,10):
         LOS_num = LOS[LOS['D']==d]
         NMAC_num = NMAC[NMAC['D']==d]
         delay_num = Ground_Delay[Ground_Delay['D']==d]
         LOS_mean.append(np.mean(LOS_num['N']*5/3000))
         LOS_sem.append(st.sem(LOS_num['N']*5/3000))
+        Ground_Delay_mean.append(np.mean(delay_num['N']))
+        Ground_Delay_sem.append(st.sem(delay_num['N']))
         # LOS_std.append(round(np.std(LOS_num['N'])*5/3000,1))
         # conf_intveral = stats.norm.interval(0.9, loc=mean, scale=std)
-        NMAC_mean.append(round(np.mean(NMAC_num['N']*5/3000),1))
-        Ground_Delay_mean.append(np.mean(delay_num['N']))
+        # NMAC_mean.append(round(np.mean(NMAC_num['N']*5/3000),1))
+        # Ground_Delay_mean.append(np.mean(delay_num['N']))
 
-    data_points = len(LOS_mean)
+    data_points = len(Ground_Delay_mean)
 
-
+    # print(Ground_Delay_mean)
     # predicted expect and calculate confidence interval
-    predicted_expect = np.mean(data, 0)
-    low_CI_bound, high_CI_bound = st.t.interval(0.95, len(LOS_mean) - 1,
-                                                loc=LOS_mean,scale=LOS_sem)
+    if plt_LOS:
+        low_CI_bound, high_CI_bound = st.t.interval(0.95, len(LOS_mean) - 1,
+                                                    loc=LOS_mean,scale=LOS_sem)
+        mean_num = LOS_mean
+    else:
+        low_CI_bound, high_CI_bound = st.t.interval(0.95, len(Ground_Delay_mean) - 1,
+                                                    loc=Ground_Delay_mean,scale=Ground_Delay_sem)
+        mean_num = Ground_Delay_mean
     # plot confidence interval
     # x = np.linspace(10, 125, num=data_points)
     # d = [3600/i for i in x ]
     x = np.linspace(10, 360, num=data_points)
     # print(d)
-    return LOS_mean,x,low_CI_bound,high_CI_bound
+    return mean_num,x,low_CI_bound,high_CI_bound
 
 
 
@@ -284,34 +301,56 @@ def plot_exp6():
     # LOS_mean6,X6,low_CI6,high_CI6=compute_interval("result\\interval_C3S150.txt")
     # LOS_mean7,X7,low_CI7,high_CI7=compute_interval("result\\interval_C3S200.txt")
     # LOS_mean8,X8,low_CI8,high_CI8=compute_interval("result\\interval_T5.txt")
-    LOS_mean9,X9,low_CI9,high_CI9=compute_interval("result\\demand_none.txt")
-    LOS_mean10,X10,low_CI10,high_CI10=compute_interval("result\\demand_tactical.txt")
-    LOS_mean11,X11,low_CI11,high_CI11=compute_interval("result\\demand_dcb.txt")
+    # LOS_mean9,X9,low_CI9,high_CI9=compute_interval("result\\demand_none.txt")
+    # LOS_mean10,X10,low_CI10,high_CI10=compute_interval("result\\demand_tactical.txt")
+    # LOS_mean11,X11,low_CI11,high_CI11=compute_interval("result\\demand_dcb.txt")
+    # LOS_mean12,X12,low_CI12,high_CI12=compute_interval("result\\demand_cross_none.txt")
+    # LOS_mean13,X13,low_CI13,high_CI13=compute_interval("result\\demand_cross_tactical.txt")
+    # LOS_mean14,X14,low_CI14,high_CI14=compute_interval("result\\demand_cross_C3S200.txt")
+    # LOS_mean15,X15,low_CI15,high_CI15=compute_interval("result\\demand_cross_C4S200.txt")
+    # LOS_mean16,X16,low_CI16,high_CI16=compute_interval("result\\NYC_data.txt",False)
+    # LOS_mean17,X17,low_CI17,high_CI17=compute_interval("result\\demand_cross_C7S200.txt",False)
+    LOS_mean18,X18,low_CI18,high_CI18=compute_interval("result/NYC_data_DCB_C3C7.txt",False)
+    LOS_mean19,X19,low_CI19,high_CI19=compute_interval("result/NYC_data_none.txt",False)
     plt.figure(figsize=(16, 12))
     plt.xticks(fontsize=22)
     plt.yticks(fontsize=22)
     # plt.plot(X1,LOS_mean1, linewidth=3., label='No DCB/Tactical')
     # plt.fill_between(X1, low_CI1, high_CI1, alpha=0.5)
 
-    plt.plot(X9,LOS_mean9, linewidth=3., label='No DCB/Tactical')
-    plt.fill_between(X9, low_CI9, high_CI9, alpha=0.5)
-
-    plt.plot(X10,LOS_mean10, linewidth=3., label='Tactical deconfliction')
-    plt.fill_between(X10, low_CI10, high_CI10, alpha=0.5)
-
-    plt.plot(X11,LOS_mean11, linewidth=3., label='DCB+Tactical,C=3,S=200')
-    plt.fill_between(X11, low_CI11, high_CI11, alpha=0.5)
+    # plt.plot(X9,LOS_mean9, linewidth=3., label='No DCB/Tactical')
+    # plt.fill_between(X9, low_CI9, high_CI9, alpha=0.5)
     #
-    # plt.plot(X7,LOS_mean7, linewidth=3., label='DCB+Tactical,C=3,S=200')
-    # plt.fill_between(X7, low_CI7, high_CI7, alpha=0.5)
+    # plt.plot(X10,LOS_mean10, linewidth=3., label='Tactical deconfliction')
+    # plt.fill_between(X10, low_CI10, high_CI10, alpha=0.5)
+    #
+    # plt.plot(X11,LOS_mean11, linewidth=3., label='DCB+Tactical,C=3,S=200')
+    # plt.fill_between(X11, low_CI11, high_CI11, alpha=0.5)
 
+
+    # plt.plot(X12,LOS_mean12, linewidth=3., label='No DCB/Tactical')
+    # plt.fill_between(X12, low_CI12, high_CI12, alpha=0.5)
+    #
+    # plt.plot(X13,LOS_mean13, linewidth=3., label='Tactical deconfliction')
+    # plt.fill_between(X13, low_CI13, high_CI13, alpha=0.5)
+
+    # plt.plot(X17,LOS_mean17, linewidth=3., label='DCB+Tactical,C=7,S=200')
+    # plt.fill_between(X17, low_CI17, high_CI17, alpha=0.5)
+    #
+    plt.plot(X19,LOS_mean19, linewidth=3., label='No DCB/tactical')
+    plt.fill_between(X19, low_CI19, high_CI19, alpha=0.5)
+
+    plt.plot(X18,LOS_mean18, linewidth=3., label='DCB+Tactical,C=7')
+    plt.fill_between(X18, low_CI18, high_CI18, alpha=0.5)
+
+    # plt.ylabel('Average Ground Delay (seconds)', fontdict={'size': 22})
     plt.ylabel('LOS Duration (%)', fontdict={'size': 22})
     plt.xlabel('Demand (ops/hr)', fontdict={'size': 22})
-    plt.ylim(0,40)
-    plt.xlim(10,360)
-    plt.legend(fontsize=22)
+    # plt.ylim(0,25)
+    plt.xlim(30,360)
+    plt.legend(loc = "upper left",fontsize=22)
     # plt.grid()
-    plt.savefig('image\\exp6_LOS.png')
+    # plt.savefig('image\\exp6_LOS_cross.png')
     plt.show()
     plt.close()
 
@@ -350,7 +389,7 @@ def plot_exp6():
 # plot_block()
 # plot_interval()
 # plot_NYC()
-# plot_heatmap(120)
+# plot_heatmap(30,True)
 # plot_exp5()
 plot_exp6()
 

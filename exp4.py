@@ -18,7 +18,7 @@ import itertools
 from tqdm import tqdm
 import random
 
-
+import sys
 #conpute the distance of two aircraft, meters
 def get_distance(location1,location2):
     lat1=location1[0]
@@ -143,16 +143,19 @@ def add_plane(id,type):
         bs.stack.stack(f'DUMPRTE {acid}')
         bs.stack.stack(f'VNAV {acid} ON')
 
-t_max = 6000                   #seconds
+t_max = 10000                   #seconds
 n_steps = int(t_max + 1)
 AC_nums = [10,10,30]
-AC_intervals = [120,120,120]         #seconds
-departure_safety_bound = 150   #seconds
+demand = int(sys.argv[1])
+inv = 3600/demand
+
+AC_intervals = [inv,inv,inv]         #seconds
+departure_safety_bound = 0   #seconds
 max_speed = 40                 #kts
 min_speed = 3                  #kts
 delta_v = 5                    #kts
 check_inv = 1                #second
-control_inv = 10
+control_inv = 10000
 NMAC_dist = 10                 #meters
 LOS_dist = 100                 #meters
 Warning_dist = 600             #meters
@@ -163,16 +166,12 @@ Cross_time_A = 576             #seconds
 Cross_time_G = 497             #seconds
 Merge_time_G = 1261            #seconds
 Merge_time_I = 448
-type = int(sys.argv[1])
-if type = 0:
-    merge_capacity = 1
-    check_block_size = 70         #seconds
-elif type = 1:
-    merge_capacity = 2
-    check_block_size = 140         #seconds
-elif type = 2:
-    merge_capacity = 50
-    check_block_size = 140         #seconds
+
+merge_capacity = 50
+cross_capacity = 50
+check_block_size = 200         #seconds
+
+
 Cross_check_block = np.zeros(round(t_max*2/check_block_size))
 Merge_check_block = np.zeros(round(t_max*2/check_block_size))
 
@@ -180,7 +179,7 @@ Merge_check_block = np.zeros(round(t_max*2/check_block_size))
 init_bs()
 Cross_check_block[int(Cross_time_A/check_block_size)]+=1
 
-def run_sim(check_point_capacity,block_size,number_list=AC_nums,interval_list=AC_intervals):
+def run_sim(merge_c,cross_c,block_size,number_list=AC_nums,interval_list=AC_intervals):
     NMAC = 0
     LOS = 0
     A_current_ac=0
@@ -218,7 +217,7 @@ def run_sim(check_point_capacity,block_size,number_list=AC_nums,interval_list=AC
                         dep_dist=get_distance([lat_list[A_ind],lon_list[A_ind],alt_list[A_ind]],[40.5959242,-74.0465984,0])
 
                         if dep_dist>departure_safety_bound and \
-                                Cross_check_block[int((Cross_time_A+A_depart_time[A_current_ac])/block_size)]<check_point_capacity:
+                                Cross_check_block[int((Cross_time_A+A_depart_time[A_current_ac])/block_size)]<cross_c:
                             bs.traf.cre(acid="A"+str(i), actype="ELE01",aclat=40.5959242,aclon=-74.0465984,acalt=0,acspd=3)
                             add_plane(i,"A")
                             A_id = "A"+str(i)
@@ -237,8 +236,8 @@ def run_sim(check_point_capacity,block_size,number_list=AC_nums,interval_list=AC
                         dep_dist=get_distance([lat_list[G_ind],lon_list[G_ind],alt_list[G_ind]],[40.6964385,-74.1231651,0])
 
                         if dep_dist>departure_safety_bound and \
-                                Merge_check_block[int((Merge_time_G+G_depart_time[G_current_ac])/block_size)]<check_point_capacity and \
-                                Cross_check_block[int((Cross_time_G+G_depart_time[G_current_ac])/block_size)]<check_point_capacity:
+                                Merge_check_block[int((Merge_time_G+G_depart_time[G_current_ac])/block_size)]<merge_c and \
+                                Cross_check_block[int((Cross_time_G+G_depart_time[G_current_ac])/block_size)]<cross_c:
                             bs.traf.cre(acid="G"+str(i), actype="ELE01",aclat=40.6964385,aclon=-74.1231651,acalt=0,acspd=3)
                             add_plane(i,"G")
                             G_id = "G"+str(i)
@@ -258,7 +257,7 @@ def run_sim(check_point_capacity,block_size,number_list=AC_nums,interval_list=AC
                         dep_dist=get_distance([lat_list[I_ind],lon_list[I_ind],alt_list[I_ind]],[40.749573,-73.901223,0])
 
                         if dep_dist>departure_safety_bound and \
-                                Merge_check_block[int((Merge_time_I+I_depart_time[I_current_ac])/block_size)]<check_point_capacity:
+                                Merge_check_block[int((Merge_time_I+I_depart_time[I_current_ac])/block_size)]<merge_c:
                             bs.traf.cre(acid="I"+str(i), actype="ELE01",aclat=40.749573,aclon=-73.901223,acalt=0,acspd=3)
                             add_plane(i,"I")
                             I_id = "I"+str(i)
@@ -279,8 +278,8 @@ def run_sim(check_point_capacity,block_size,number_list=AC_nums,interval_list=AC
                         dep_dist=get_distance([lat_list[G_ind],lon_list[G_ind],alt_list[G_ind]],[40.6964385,-74.1231651,0])
 
                         if dep_dist>departure_safety_bound and \
-                                Merge_check_block[int((Merge_time_G+G_depart_time[G_current_ac])/block_size)]<check_point_capacity and \
-                                Cross_check_block[int((Cross_time_G+G_depart_time[G_current_ac])/block_size)]<check_point_capacity:
+                                Merge_check_block[int((Merge_time_G+G_depart_time[G_current_ac])/block_size)]<merge_c and \
+                                Cross_check_block[int((Cross_time_G+G_depart_time[G_current_ac])/block_size)]<cross_c:
                             bs.traf.cre(acid="G"+str(i), actype="ELE01",aclat=40.6964385,aclon=-74.1231651,acalt=0,acspd=3)
                             add_plane(i,"G")
                             G_id = "G"+str(i)
@@ -301,7 +300,7 @@ def run_sim(check_point_capacity,block_size,number_list=AC_nums,interval_list=AC
                         dep_dist=get_distance([lat_list[A_ind],lon_list[A_ind],alt_list[A_ind]],[40.5959242,-74.0465984,0])
 
                         if dep_dist>departure_safety_bound and \
-                                Cross_check_block[int((Cross_time_A+A_depart_time[A_current_ac])/block_size)]<check_point_capacity:
+                                Cross_check_block[int((Cross_time_A+A_depart_time[A_current_ac])/block_size)]<cross_c:
                             bs.traf.cre(acid="A"+str(i), actype="ELE01",aclat=40.5959242,aclon=-74.0465984,acalt=0,acspd=3)
                             add_plane(i,"A")
                             A_id = "A"+str(i)
@@ -320,7 +319,7 @@ def run_sim(check_point_capacity,block_size,number_list=AC_nums,interval_list=AC
                         dep_dist=get_distance([lat_list[I_ind],lon_list[I_ind],alt_list[I_ind]],[40.749573,-73.901223,0])
 
                         if dep_dist>departure_safety_bound and \
-                                Merge_check_block[int((Merge_time_I+I_depart_time[I_current_ac])/block_size)]<check_point_capacity:
+                                Merge_check_block[int((Merge_time_I+I_depart_time[I_current_ac])/block_size)]<merge_c:
                             bs.traf.cre(acid="I"+str(i), actype="ELE01",aclat=40.749573,aclon=-73.901223,acalt=0,acspd=3)
                             add_plane(i,"I")
                             I_id = "I"+str(i)
@@ -341,7 +340,7 @@ def run_sim(check_point_capacity,block_size,number_list=AC_nums,interval_list=AC
                         dep_dist=get_distance([lat_list[I_ind],lon_list[I_ind],alt_list[I_ind]],[40.749573,-73.901223,0])
 
                         if dep_dist>departure_safety_bound and \
-                                Merge_check_block[int((Merge_time_I+I_depart_time[I_current_ac])/block_size)]<check_point_capacity:
+                                Merge_check_block[int((Merge_time_I+I_depart_time[I_current_ac])/block_size)]<merge_c:
                             bs.traf.cre(acid="I"+str(i), actype="ELE01",aclat=40.749573,aclon=-73.901223,acalt=0,acspd=3)
                             add_plane(i,"I")
                             I_id = "I"+str(i)
@@ -360,7 +359,7 @@ def run_sim(check_point_capacity,block_size,number_list=AC_nums,interval_list=AC
                         dep_dist=get_distance([lat_list[A_ind],lon_list[A_ind],alt_list[A_ind]],[40.5959242,-74.0465984,0])
 
                         if dep_dist>departure_safety_bound and \
-                                Cross_check_block[int((Cross_time_A+A_depart_time[A_current_ac])/block_size)]<check_point_capacity:
+                                Cross_check_block[int((Cross_time_A+A_depart_time[A_current_ac])/block_size)]<cross_c:
                             bs.traf.cre(acid="A"+str(i), actype="ELE01",aclat=40.5959242,aclon=-74.0465984,acalt=0,acspd=3)
                             add_plane(i,"A")
                             A_id = "A"+str(i)
@@ -379,8 +378,8 @@ def run_sim(check_point_capacity,block_size,number_list=AC_nums,interval_list=AC
                         dep_dist=get_distance([lat_list[G_ind],lon_list[G_ind],alt_list[G_ind]],[40.6964385,-74.1231651,0])
 
                         if dep_dist>departure_safety_bound and \
-                                Merge_check_block[int((Merge_time_G+G_depart_time[G_current_ac])/block_size)]<check_point_capacity and \
-                                Cross_check_block[int((Cross_time_G+G_depart_time[G_current_ac])/block_size)]<check_point_capacity:
+                                Merge_check_block[int((Merge_time_G+G_depart_time[G_current_ac])/block_size)]<merge_c and \
+                                Cross_check_block[int((Cross_time_G+G_depart_time[G_current_ac])/block_size)]<cross_c:
                             bs.traf.cre(acid="G"+str(i), actype="ELE01",aclat=40.6964385,aclon=-74.1231651,acalt=0,acspd=3)
                             add_plane(i,"G")
                             G_id = "G"+str(i)
@@ -490,23 +489,15 @@ def run_sim(check_point_capacity,block_size,number_list=AC_nums,interval_list=AC
                  np.mean(I_depart_time-I_depart_time_ori))/3
     return [LOS,NMAC],avg_delay
 
-safety,efficiency = run_sim(merge_capacity,check_block_size)
+safety,efficiency = run_sim(merge_capacity,cross_capacity,check_block_size)
 
 print(f"number of LOS:{safety[0]}")
 print(f"number of MAC:{safety[1]}")
 print(f"average delay:{round(efficiency)} s")
-print(f"Type={type}")
-g=open("NYC data.txt","a")
-if type = 0:
-    g.write(f"{safety[0]},B,LOS_high\n")
-    g.write(f"{safety[1]},B,NMAC_high\n")
-    g.write(f"{round(efficiency)},B,Delay)_high\n")
-if type = 1:
-    g.write(f"{safety[0]},B,LOS_low\n")
-    g.write(f"{safety[1]},B,NMAC_low\n")
-    g.write(f"{round(efficiency)},B,Delay_low\n")
-if type = 2:
-    g.write(f"{safety[0]},B,LOS_no\n")
-    g.write(f"{safety[1]},B,NMAC_no\n")
-    g.write(f"{round(efficiency)},B,Delay_no\n")
+print(f"demand = {demand}")
+g=open("result/NYC_data_none.txt", "a")
+
+g.write(f"{safety[0]},{demand},LOS\n")
+g.write(f"{safety[1]},{demand},NMAC\n")
+g.write(f"{round(efficiency)},{demand},Ground Delay\n")
 

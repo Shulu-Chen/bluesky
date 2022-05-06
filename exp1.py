@@ -104,7 +104,7 @@ def add_plane(id,type):
 t_max = 10000                   #second
 n_steps = int(t_max + 1)
 # inv = int(sys.argv[1])
-inv = 30
+inv = 90
 AC_nums = [10,10]
 # AC_intervals = [60,60]         #second
 AC_intervals =[inv,inv]
@@ -336,7 +336,7 @@ print(f"average delay:{round(efficiency)} s")
 print("Capacity=",merge_capacity)
 print("Block size=",check_block_size)
 print("*******************************")
-g=open("grid_search_30.txt","a")
+g=open("result\\grid_search_90.txt","a")
 g.write(f"{safety[0]},{merge_capacity},{check_block_size},LOS\n")
 g.write(f"{safety[1]},{merge_capacity},{check_block_size},NMAC\n")
 g.write(f"{round(efficiency)},{merge_capacity},{check_block_size},Ground Delay\n")

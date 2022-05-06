@@ -102,7 +102,7 @@ n_steps = int(t_max + 1)
 # inv = int(sys.argv[1])
 AC_nums = [10,10]
 # AC_intervals = [60,60]         #second
-demand = 120
+demand = int(sys.argv[1])
 inv = 3600/demand
 
 AC_intervals =[inv,inv]
@@ -116,9 +116,9 @@ NMAC_dist = 10                 #meter
 LOS_dist = 100                 #meter
 Warning_dist = 600             #meter
 SpeedUp_dist = 800
-merge_capacity = int(sys.argv[1])
+merge_capacity = 7
 merge_time = 1015              #second
-check_block_size = int(sys.argv[2])        #second
+check_block_size = 200       #second
 
 
 bs.init('sim-detached')
@@ -331,9 +331,9 @@ print("*******************************")
 print(f"number of LOS:{safety[0]}")
 print(f"number of MAC:{safety[1]}")
 print(f"average delay:{round(efficiency)} s")
-print(f"C={merge_capacity},S={check_block_size}")
+print(f"D={demand}")
 print("*******************************")
-g=open("result/GridSearch_cross_120.txt", "a")
-g.write(f"{safety[0]},{merge_capacity},{check_block_size},LOS\n")
-g.write(f"{safety[1]},{merge_capacity},{check_block_size},NMAC\n")
+g=open("result/demand_cross_C7S200.txt", "a")
+g.write(f"{safety[0]},{demand},LOS\n")
+g.write(f"{safety[1]},{demand},NMAC\n")
 g.write(f"{round(efficiency)},{demand},Ground Delay\n")

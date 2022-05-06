@@ -228,10 +228,10 @@ def add_plane(id,type):
 
     f.write("\n")
 
-t_max = 6000                   #seconds
+t_max = 10000                   #seconds
 n_steps = int(t_max + 1)
 AC_nums = [10,10,30]
-AC_intervals = [120,120,120]         #seconds
+AC_intervals = [360,360,360]         #seconds
 departure_safety_bound = 150   #seconds
 max_speed = 40                 #kts
 min_speed = 3                  #kts
@@ -241,13 +241,13 @@ NMAC_dist = 10                 #meters
 LOS_dist = 100                 #meters
 Warning_dist = 600             #meters
 SpeedUp_dist = 800             #meters
-merge_capacity = 1
+merge_capacity = 4
 
 Cross_time_A = 576             #seconds
 Cross_time_G = 497             #seconds
 Merge_time_G = 1261            #seconds
 Merge_time_I = 448
-check_block_size = 60         #seconds
+check_block_size = 200         #seconds
 Cross_check_block = np.zeros(round(t_max*2/check_block_size))
 Merge_check_block = np.zeros(round(t_max*2/check_block_size))
 
@@ -562,10 +562,10 @@ safety,efficiency = run_sim(merge_capacity,check_block_size)
 print(f"number of LOS:{safety[0]}")
 print(f"number of MAC:{safety[1]}")
 print(f"average delay:{round(efficiency)} s")
-g=open("NYC data.txt","a")
-g.write(f"{safety[0]},B,LOS with DCB\n")
-g.write(f"{safety[1]},B,NMAC with DCB\n")
-g.write(f"{round(efficiency)},B,Ground Delay with DCB\n")
+# g=open("NYC data.txt","a")
+# g.write(f"{safety[0]},B,LOS with DCB\n")
+# g.write(f"{safety[1]},B,NMAC with DCB\n")
+# g.write(f"{round(efficiency)},B,Ground Delay with DCB\n")
 # plt.bar(range(len(ground_delay_list)), ground_delay_list)
 # plt.title("Ground delay")
 # plt.xlabel("Flight id")

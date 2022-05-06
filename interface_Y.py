@@ -67,7 +67,7 @@ def init_bs():
     f.write("00:00:00.00>TAXI OFF 4\n")
     # f.write("0:00:00.00>ASAS ON \n")
     f.write("0:00:00.00>PAN 0,0.2 \n")
-    f.write("0:00:00.00>ZOOM 2.5 \n")
+    f.write("0:00:00.00>ZOOM 3 \n")
     f.write("00:00:00.00>CIRCLE a, 0.0,0.0 0.2\n")
     # f.write("0:00:00.00>FF \n")
     f.write("\n")
@@ -148,23 +148,23 @@ def add_plane(id,type):
 
     f.write("\n")
 
-t_max = 3000                   #second
+t_max = 10000                   #second
 n_steps = int(t_max + 1)
-inv = 60
-AC_nums = [0,0]
+inv = 300
+AC_nums = [10,10]
 # AC_intervals = [60,60]         #second
 AC_intervals =[inv,inv]
-departure_safety_bound = 150   #second
+departure_safety_bound = 1600   #second
 max_speed = 40                 #kts
 min_speed = 3                  #kts
 delta_v = 5                    #kts
 check_inv = 10                  #second
-control_inv = 10               #second
+control_inv = 2               #second
 NMAC_dist = 10                 #meter
 LOS_dist = 100                 #meter
 Warning_dist = 600             #meter
 SpeedUp_dist = 800
-merge_capacity = 2
+merge_capacity = 1
 merge_time = 1015              #second
 check_block_size =  100        #second
 

@@ -101,12 +101,15 @@ def add_plane(id,type):
 
 
 
-t_max = 3000                   #second
+t_max = 10000                   #second
 n_steps = int(t_max + 1)
 # inv = int(sys.argv[1])
-inv = int(sys.argv[1])
+# inv = int(sys.argv[1])
 AC_nums = [10,10]
 # AC_intervals = [60,60]         #second
+demand = int(sys.argv[1])
+inv = 3600/demand
+
 AC_intervals =[inv,inv]
 departure_safety_bound = 150   #second
 max_speed = 40                 #kts
@@ -118,9 +121,9 @@ NMAC_dist = 10                 #meter
 LOS_dist = 100                 #meter
 Warning_dist = 600             #meter
 SpeedUp_dist = 800
-merge_capacity = 1
+merge_capacity = 3
 merge_time = 1015              #second
-check_block_size = 70        #second
+check_block_size = 200        #second
 
 
 bs.init('sim-detached')
@@ -227,7 +230,7 @@ def run_sim(check_point_capacity,block_size,number_list=AC_nums,interval_list=AC
                         else:
                             U_depart_time[U_current_ac:]=list(map(lambda x:x+1,U_depart_time[U_current_ac:]))
 
-        # ## in-air deconfliction ##
+        ## in-air deconfliction ##
         if i%control_inv==0:
             if len(lat_list)<=1 or len(lat_list)<len(ac_list):
                 continue
@@ -333,9 +336,9 @@ print("*******************************")
 print(f"number of LOS:{safety[0]}")
 print(f"number of MAC:{safety[1]}")
 print(f"average delay:{round(efficiency)} s")
-print("inv=",inv)
+print("demand=",demand)
 print("*******************************")
-g=open("Interval data.txt","a")
-g.write(f"{safety[0]},{inv},LOS\n")
-g.write(f"{safety[1]},{inv},NMAC\n")
-g.write(f"{round(efficiency)},{inv},Ground Delay\n")
+g=open("result/demand_dcb.txt", "a")
+g.write(f"{safety[0]},{demand},LOS\n")
+g.write(f"{safety[1]},{demand},NMAC\n")
+g.write(f"{round(efficiency)},{demand},Ground Delay\n")
