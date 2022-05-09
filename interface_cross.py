@@ -54,9 +54,9 @@ def init_bs():
 
     # initialize bluesky as non-networked simulation node
 
-    bs.stack.stack('CRELOG Y 1')
-    bs.stack.stack('Y ADD id,lat, lon, alt, tas, vs ')
-    bs.stack.stack('Y ON 1  ')
+    bs.stack.stack('CRELOG Cross 1')
+    bs.stack.stack('Cross ADD id,lat, lon, alt, tas, vs ')
+    bs.stack.stack('Cross ON 1  ')
     # bs.stack.stack('ASAS ON')
     bs.stack.stack('TAXI OFF 4')
     # f.write("00:00:00.00>CRELOG Y_gui 1\n")
@@ -142,7 +142,7 @@ def add_plane(id,type):
 t_max = 10000                   #second
 n_steps = int(t_max + 1)
 inv = 360
-AC_nums = [10,10]
+AC_nums = [0,0]
 # AC_intervals = [60,60]         #second
 AC_intervals =[inv,inv]
 departure_safety_bound = 150   #second

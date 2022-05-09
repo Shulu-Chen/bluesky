@@ -150,12 +150,12 @@ demand = int(sys.argv[1])
 inv = 3600/demand
 
 AC_intervals = [inv,inv,inv]         #seconds
-departure_safety_bound = 0   #seconds
+departure_safety_bound = 150   #seconds
 max_speed = 40                 #kts
 min_speed = 3                  #kts
 delta_v = 5                    #kts
 check_inv = 1                #second
-control_inv = 10000
+control_inv = 10
 NMAC_dist = 10                 #meters
 LOS_dist = 100                 #meters
 Warning_dist = 600             #meters
@@ -495,7 +495,7 @@ print(f"number of LOS:{safety[0]}")
 print(f"number of MAC:{safety[1]}")
 print(f"average delay:{round(efficiency)} s")
 print(f"demand = {demand}")
-g=open("result/NYC_data_none.txt", "a")
+g=open("result/NYC_data_tac.txt", "a")
 
 g.write(f"{safety[0]},{demand},LOS\n")
 g.write(f"{safety[1]},{demand},NMAC\n")

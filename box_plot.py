@@ -275,13 +275,13 @@ def plot_exp5():
     ax.set_ylabel("Average Ground Delay (seconds)",fontsize=10)
     plt.savefig('image\\exp5_delay.png')
 
-def compute_interval(path,plt_LOS,scn):
+def compute_interval(path,plt_type,scn):
     if scn == "cross":
-        running_time = 2000
+        running_time = 400
     if scn == "merge":
-        running_time = 2500
+        running_time = 500
     if scn == "NYC":
-        running_time = 3000
+        running_time = 357
     data = pd.read_table(path,sep=',',header=None)
     data.columns=['N','D','Type']
     LOS =  data[data['Type']=='LOS']
@@ -292,33 +292,36 @@ def compute_interval(path,plt_LOS,scn):
     LOS_mean = []
     LOS_sem = []
     NMAC_mean = []
+    NMAC_sem = []
     Ground_Delay_mean = []
     Ground_Delay_sem = []
     for d in np.arange(10,360,10):
         LOS_num = LOS[LOS['D']==d]
         NMAC_num = NMAC[NMAC['D']==d]
         delay_num = Ground_Delay[Ground_Delay['D']==d]
-        LOS_mean.append(np.mean(LOS_num['N']*5/running_time))
-        LOS_sem.append(st.sem(LOS_num['N']*5/running_time))
+        LOS_mean.append(np.mean(LOS_num['N']/running_time))
+        LOS_sem.append(st.sem(LOS_num['N']/running_time))
         Ground_Delay_mean.append(np.mean(delay_num['N']))
         Ground_Delay_sem.append(st.sem(delay_num['N']))
-        # LOS_std.append(round(np.std(LOS_num['N'])*5/3000,1))
-        # conf_intveral = stats.norm.interval(0.9, loc=mean, scale=std)
-        # NMAC_mean.append(round(np.mean(NMAC_num['N']*5/3000),1))
-        # Ground_Delay_mean.append(np.mean(delay_num['N']))
+        NMAC_mean.append(np.mean(NMAC_num['N']/running_time))
+        NMAC_sem.append(st.sem(NMAC_num['N']/running_time))
 
     data_points = len(Ground_Delay_mean)
 
     # print(Ground_Delay_mean)
     # predicted expect and calculate confidence interval
-    if plt_LOS:
+    if plt_type == "LOS":
         low_CI_bound, high_CI_bound = st.t.interval(0.95, len(LOS_mean) - 1,
                                                     loc=LOS_mean,scale=LOS_sem)
         mean_num = LOS_mean
-    else:
+    if plt_type == "delay":
         low_CI_bound, high_CI_bound = st.t.interval(0.95, len(Ground_Delay_mean) - 1,
                                                     loc=Ground_Delay_mean,scale=Ground_Delay_sem)
         mean_num = Ground_Delay_mean
+    if plt_type == "NMAC":
+        low_CI_bound, high_CI_bound = st.t.interval(0.95, len(NMAC_mean) - 1,
+                                                    loc=NMAC_mean,scale=NMAC_sem)
+        mean_num = NMAC_mean
     # plot confidence interval
     # x = np.linspace(10, 125, num=data_points)
     # d = [3600/i for i in x ]
@@ -328,22 +331,22 @@ def compute_interval(path,plt_LOS,scn):
 
 
 
-def plot_exp6(plt_LOS,scn):
+def plot_exp6(plt_type,scn):
 
     if scn =="merge":
-        LOS_mean1,X1,low_CI1,high_CI1=compute_interval("result\\demand_merge_none.txt",plt_LOS,scn)
-        LOS_mean2,X2,low_CI2,high_CI2=compute_interval("result\\demand_merge_tactical.txt",plt_LOS,scn)
-        LOS_mean3,X3,low_CI3,high_CI3=compute_interval("result\\demand_merge_dcb.txt",plt_LOS,scn)
+        LOS_mean1,X1,low_CI1,high_CI1=compute_interval("result\\demand_merge_none.txt",plt_type,scn)
+        LOS_mean2,X2,low_CI2,high_CI2=compute_interval("result\\demand_merge_tactical.txt",plt_type,scn)
+        LOS_mean3,X3,low_CI3,high_CI3=compute_interval("result\\demand_merge_dcb.txt",plt_type,scn)
         label_name = "$C=3,S=200$"
     if scn =="cross":
-        LOS_mean1,X1,low_CI1,high_CI1=compute_interval("result\\demand_cross_none.txt",plt_LOS,scn)
-        LOS_mean2,X2,low_CI2,high_CI2=compute_interval("result\\demand_cross_tactical.txt",plt_LOS,scn)
-        LOS_mean3,X3,low_CI3,high_CI3=compute_interval("result\\demand_cross_C7S200.txt",plt_LOS,scn)
-        label_name = "$C=3,S=200$"
+        LOS_mean1,X1,low_CI1,high_CI1=compute_interval("result\\demand_cross_none.txt",plt_type,scn)
+        LOS_mean2,X2,low_CI2,high_CI2=compute_interval("result\\demand_cross_tactical.txt",plt_type,scn)
+        LOS_mean3,X3,low_CI3,high_CI3=compute_interval("result\\demand_cross_C7S200.txt",plt_type,scn)
+        label_name = "$C=7,S=200$"
     if scn == "NYC":
-        LOS_mean1,X1,low_CI1,high_CI1=compute_interval("result/NYC_data_none.txt",plt_LOS,scn)
-        LOS_mean2,X2,low_CI2,high_CI2=compute_interval("result/NYC_data_tac.txt",plt_LOS,scn)
-        LOS_mean3,X3,low_CI3,high_CI3=compute_interval("result/NYC_data_DCB_C3C7.txt",plt_LOS,scn)
+        LOS_mean1,X1,low_CI1,high_CI1=compute_interval("result/NYC_data_none.txt",plt_type,scn)
+        LOS_mean2,X2,low_CI2,high_CI2=compute_interval("result/NYC_data_tac.txt",plt_type,scn)
+        LOS_mean3,X3,low_CI3,high_CI3=compute_interval("result/NYC_data_DCB_C3C7.txt",plt_type,scn)
         label_name = "$C_c=3,C_m=7,S=200$"
     plt.figure(figsize=(16, 12))
     plt.xticks(fontsize=22)
@@ -358,12 +361,14 @@ def plot_exp6(plt_LOS,scn):
     plt.plot(X3,LOS_mean3, linewidth=3., label=f'DCB+Tactical,{label_name}')
     plt.fill_between(X3, low_CI3, high_CI3, alpha=0.5)
 
-    if plt_LOS:
+    if plt_type == "LOS":
         plt.ylabel('LOS Duration (%)', fontdict={'size': 22})
-        plt_name = "LOS"
-    else:
-        plt_name = "delay"
+
+    if plt_type == "delay":
         plt.ylabel('Average Ground Delay (seconds)', fontdict={'size': 22})
+
+    if plt_type == "NMAC":
+        plt.ylabel('NMAC Duration (%)', fontdict={'size': 22})
 
     plt.xlabel('Demand (ops/hr)', fontdict={'size': 22})
 
@@ -371,7 +376,7 @@ def plot_exp6(plt_LOS,scn):
     plt.xlim(30,360)
     plt.legend(loc = "upper left",fontsize=22)
 
-    plt.savefig(f'image\\exp6_{plt_name}_{scn}.pdf')
+    plt.savefig(f'image\\exp6_{plt_type}_{scn}.pdf')
     plt.show()
     plt.close()
 
@@ -383,7 +388,7 @@ def plot_exp6(plt_LOS,scn):
 # plot_NYC()
 # plot_heatmap(30,False) #True: Cross, False: merge
 # plot_exp5()
-plot_exp6(True,"NYC")  #True: LOS, False: delay
+plot_exp6("LOS","NYC")
 
 
 

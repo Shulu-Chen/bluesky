@@ -151,7 +151,7 @@ def add_plane(id,type):
 t_max = 10000                   #second
 n_steps = int(t_max + 1)
 inv = 300
-AC_nums = [10,10]
+AC_nums = [0,0]
 # AC_intervals = [60,60]         #second
 AC_intervals =[inv,inv]
 departure_safety_bound = 1600   #second

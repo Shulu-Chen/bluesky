@@ -55,9 +55,9 @@ def init_bs():
     # initialize bluesky as non-networked simulation node
     bs.init('sim-detached')
 
-    # bs.stack.stack('CRELOG NYC 1')
-    # bs.stack.stack('NYC ADD id,lat, lon, alt, tas, vs ')
-    # bs.stack.stack('NYC ON 1  ')
+    bs.stack.stack('CRELOG NYC 1')
+    bs.stack.stack('NYC ADD id,lat, lon, alt, tas, vs ')
+    bs.stack.stack('NYC ON 1  ')
     # bs.stack.stack('ASAS ON')
     bs.stack.stack('TAXI OFF 4')
     # f.write("00:00:00.00>CRELOG NYC_gui 1\n")
@@ -75,10 +75,10 @@ def init_bs():
 
     # set simulation time step, and enable fast-time running
     bs.stack.stack('DT 1;FF')
-    # bs.traf.cre(acid="I"+str(0), actype="ELE01",aclat=40.749573, aclon=-73.901223)
-    bs.traf.cre(acid="A"+str(0), actype="ELE01",aclat=40.5959242, aclon=-74.0465984)
+    bs.traf.cre(acid="I"+str(0), actype="ELE01",aclat=40.749573, aclon=-73.901223)
+    # bs.traf.cre(acid="A"+str(0), actype="ELE01",aclat=40.5959242, aclon=-74.0465984)
     # bs.traf.cre(acid="G"+str(0), actype="ELE01",aclat=40.6964385, aclon=-74.1231651)
-    add_plane(0,"A")
+    add_plane(0,"I")
 
 
 def add_plane(id,type):
@@ -230,7 +230,7 @@ def add_plane(id,type):
 
 t_max = 10000                   #seconds
 n_steps = int(t_max + 1)
-AC_nums = [10,10,30]
+AC_nums = [0,0,0]
 AC_intervals = [360,360,360]         #seconds
 departure_safety_bound = 150   #seconds
 max_speed = 40                 #kts
