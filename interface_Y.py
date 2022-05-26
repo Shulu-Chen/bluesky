@@ -150,21 +150,21 @@ def add_plane(id,type):
 
 t_max = 10000                   #second
 n_steps = int(t_max + 1)
-inv = 120
+inv = 10
 AC_nums = [10,10]
 # AC_intervals = [60,60]         #second
 AC_intervals =[inv,inv]
-departure_safety_bound = 150   #second
+departure_safety_bound = 10   #second
 max_speed = 40                 #kts
 min_speed = 3                  #kts
 delta_v = 5                    #kts
-check_inv = 1                  #second
-control_inv = 1               #second
+check_inv = 100                  #second
+control_inv = 100               #second
 NMAC_dist = 10                 #meter
 LOS_dist = 100                 #meter
 Warning_dist = 600             #meter
 SpeedUp_dist = 800
-merge_capacity = 1
+merge_capacity = 10
 merge_time = 1015              #second
 check_block_size =  100        #second
 
