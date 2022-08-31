@@ -60,17 +60,17 @@ def init_bs():
     bs.stack.stack('NYC ON 1  ')
     # bs.stack.stack('ASAS ON')
     bs.stack.stack('TAXI OFF 4')
-    # f.write("00:00:00.00>CRELOG NYC_gui 1\n")
-    # f.write("00:00:00.00>NYC_gui ADD id,lat, lon, alt, tas, vs\n")
-    # f.write("00:00:00.00>NYC_gui ON 1\n")
+    f.write("00:00:00.00>CRELOG NYC_gui 1\n")
+    f.write("00:00:00.00>NYC_gui ADD id,lat, lon, alt, tas, vs\n")
+    f.write("00:00:00.00>NYC_gui ON 1\n")
     f.write("00:00:00.00>TRAILS ON \n")
     f.write("00:00:00.00>TAXI OFF 4\n")
-    # f.write("0:00:00.00>ASAS ON \n")
+    f.write("0:00:00.00>ASAS ON \n")
     f.write("0:00:00.00>PAN 40.689582,-73.886988 \n")
     f.write("0:00:00.00>ZOOM 2 \n")
     f.write("00:00:00.00>CIRCLE a, 40.689582,-73.886988 0.2\n")
     f.write("00:00:00.00>CIRCLE b, 40.678505,-74.029101 0.2\n")
-    # f.write("0:00:00.00>FF \n")
+    f.write("0:00:00.00>FF \n")
     f.write("\n")
 
     # set simulation time step, and enable fast-time running
@@ -301,6 +301,7 @@ def run_sim(check_point_capacity,block_size,number_list=AC_nums,interval_list=AC
                             Cross_check_block[int((Cross_time_A+A_depart_time[A_current_ac])/block_size)]+=1
                             A_current_ac+=1
                         else:
+
                             A_depart_time[A_current_ac:]=list(map(lambda x:x+1,A_depart_time[A_current_ac:]))
 
             if G_current_ac<G_number:

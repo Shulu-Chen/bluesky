@@ -1,9 +1,9 @@
 #!/usr/bin/python3
 # coding: utf-8
 '''
- @Time    : 4/28/2022 7:37 PM
+ @Time    : 5/4/2022 10:38 PM
  @Author  : Shulu Chen
- @FileName: exp3.py
+ @FileName: exp6_cross.py
  @Software: PyCharm
 '''
 import numpy as np
@@ -59,7 +59,7 @@ def add_plane(id,type):
         acid="U"+str(id)
 
         bs.stack.stack(f'ORIG {acid} N_7')
-        bs.stack.stack(f'DEST {acid} N_4')
+        bs.stack.stack(f'DEST {acid} M_5')
 
         v = random.choice(speed_list)
         bs.stack.stack(f'SPD {acid} {v}')
@@ -69,10 +69,8 @@ def add_plane(id,type):
         bs.stack.stack(f'ADDWPT {acid} N_1, 400, {v}')
 
         v = random.choice(speed_list)
-        bs.stack.stack(f'ADDWPT {acid} N_2, 400, {v}')
+        bs.stack.stack(f'ADDWPT {acid} M_4, 400, {v}')
 
-        v = random.choice(speed_list)
-        bs.stack.stack(f'ADDWPT {acid} N_3, 400, {v}')
         bs.stack.stack(f'VNAV {acid} ON')
 
     if type=="D":
@@ -80,7 +78,7 @@ def add_plane(id,type):
         acid="D"+str(id)
 
         bs.stack.stack(f'ORIG {acid} N_9')
-        bs.stack.stack(f'DEST {acid} N_4')
+        bs.stack.stack(f'DEST {acid} M_1')
 
         v = random.choice(speed_list)
         bs.stack.stack(f'SPD {acid} {v}')
@@ -91,10 +89,7 @@ def add_plane(id,type):
         bs.stack.stack(f'ADDWPT {acid} N_1, 400, {v}')
 
         v = random.choice(speed_list)
-        bs.stack.stack(f'ADDWPT {acid} N_2, 400, {v}')
-
-        v = random.choice(speed_list)
-        bs.stack.stack(f'ADDWPT {acid} N_3, 400, {v}')
+        bs.stack.stack(f'ADDWPT {acid} M_2, 400, {v}')
 
 
         bs.stack.stack(f'VNAV {acid} ON')
@@ -121,9 +116,9 @@ NMAC_dist = 10                 #meter
 LOS_dist = 100                 #meter
 Warning_dist = 600             #meter
 SpeedUp_dist = 800
-merge_capacity = 3
+merge_capacity = 7
 merge_time = 1015              #second
-check_block_size = 200        #second
+check_block_size = 200       #second
 
 
 bs.init('sim-detached')
@@ -336,9 +331,9 @@ print("*******************************")
 print(f"number of LOS:{safety[0]}")
 print(f"number of MAC:{safety[1]}")
 print(f"average delay:{round(efficiency)} s")
-print("demand=",demand)
+print(f"D={demand}")
 print("*******************************")
-g=open("result/demand_merge_dcb.txt", "a")
+g=open("../result/demand_cross_C7S200.txt", "a")
 g.write(f"{safety[0]},{demand},LOS\n")
 g.write(f"{safety[1]},{demand},NMAC\n")
 g.write(f"{round(efficiency)},{demand},Ground Delay\n")

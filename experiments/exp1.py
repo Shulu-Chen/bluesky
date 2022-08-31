@@ -1,9 +1,9 @@
 #!/usr/bin/python3
 # coding: utf-8
 '''
- @Time    : 5/4/2022 10:38 PM
+ @Time    : 4/28/2022 6:47 PM
  @Author  : Shulu Chen
- @FileName: exp6_cross.py
+ @FileName: exp1.py
  @Software: PyCharm
 '''
 import numpy as np
@@ -59,7 +59,7 @@ def add_plane(id,type):
         acid="U"+str(id)
 
         bs.stack.stack(f'ORIG {acid} N_7')
-        bs.stack.stack(f'DEST {acid} M_5')
+        bs.stack.stack(f'DEST {acid} N_4')
 
         v = random.choice(speed_list)
         bs.stack.stack(f'SPD {acid} {v}')
@@ -69,8 +69,10 @@ def add_plane(id,type):
         bs.stack.stack(f'ADDWPT {acid} N_1, 400, {v}')
 
         v = random.choice(speed_list)
-        bs.stack.stack(f'ADDWPT {acid} M_4, 400, {v}')
+        bs.stack.stack(f'ADDWPT {acid} N_2, 400, {v}')
 
+        v = random.choice(speed_list)
+        bs.stack.stack(f'ADDWPT {acid} N_3, 400, {v}')
         bs.stack.stack(f'VNAV {acid} ON')
 
     if type=="D":
@@ -78,7 +80,7 @@ def add_plane(id,type):
         acid="D"+str(id)
 
         bs.stack.stack(f'ORIG {acid} N_9')
-        bs.stack.stack(f'DEST {acid} M_1')
+        bs.stack.stack(f'DEST {acid} N_4')
 
         v = random.choice(speed_list)
         bs.stack.stack(f'SPD {acid} {v}')
@@ -89,7 +91,10 @@ def add_plane(id,type):
         bs.stack.stack(f'ADDWPT {acid} N_1, 400, {v}')
 
         v = random.choice(speed_list)
-        bs.stack.stack(f'ADDWPT {acid} M_2, 400, {v}')
+        bs.stack.stack(f'ADDWPT {acid} N_2, 400, {v}')
+
+        v = random.choice(speed_list)
+        bs.stack.stack(f'ADDWPT {acid} N_3, 400, {v}')
 
 
         bs.stack.stack(f'VNAV {acid} ON')
@@ -99,26 +104,23 @@ def add_plane(id,type):
 t_max = 10000                   #second
 n_steps = int(t_max + 1)
 # inv = int(sys.argv[1])
-# inv = int(sys.argv[1])
+inv = 90
 AC_nums = [10,10]
 # AC_intervals = [60,60]         #second
-demand = int(sys.argv[1])
-inv = 3600/demand
-
 AC_intervals =[inv,inv]
 departure_safety_bound = 150   #second
 max_speed = 40                 #kts
 min_speed = 3                  #kts
 delta_v = 5                    #kts
 check_inv = 1                  #second
-control_inv = 10               #second
+control_inv = 5               #second
 NMAC_dist = 10                 #meter
 LOS_dist = 100                 #meter
 Warning_dist = 600             #meter
 SpeedUp_dist = 800
-merge_capacity = 7
+merge_capacity = int(sys.argv[1])
 merge_time = 1015              #second
-check_block_size = 200       #second
+check_block_size =  int(sys.argv[2])       #second
 
 
 bs.init('sim-detached')
@@ -225,7 +227,7 @@ def run_sim(check_point_capacity,block_size,number_list=AC_nums,interval_list=AC
                         else:
                             U_depart_time[U_current_ac:]=list(map(lambda x:x+1,U_depart_time[U_current_ac:]))
 
-        ## in-air deconfliction ##
+        # ## in-air deconfliction ##
         if i%control_inv==0:
             if len(lat_list)<=1 or len(lat_list)<len(ac_list):
                 continue
@@ -331,9 +333,10 @@ print("*******************************")
 print(f"number of LOS:{safety[0]}")
 print(f"number of MAC:{safety[1]}")
 print(f"average delay:{round(efficiency)} s")
-print(f"D={demand}")
+print("Capacity=",merge_capacity)
+print("Block size=",check_block_size)
 print("*******************************")
-g=open("result/demand_cross_C7S200.txt", "a")
-g.write(f"{safety[0]},{demand},LOS\n")
-g.write(f"{safety[1]},{demand},NMAC\n")
-g.write(f"{round(efficiency)},{demand},Ground Delay\n")
+g=open("../result/grid_search_40.txt", "a")
+g.write(f"{safety[0]},{merge_capacity},{check_block_size},LOS\n")
+g.write(f"{safety[1]},{merge_capacity},{check_block_size},NMAC\n")
+g.write(f"{round(efficiency)},{merge_capacity},{check_block_size},Ground Delay\n")

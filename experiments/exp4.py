@@ -495,7 +495,7 @@ print(f"number of LOS:{safety[0]}")
 print(f"number of MAC:{safety[1]}")
 print(f"average delay:{round(efficiency)} s")
 print(f"demand = {demand}")
-g=open("result/NYC_data_tac.txt", "a")
+g=open("../result/NYC_data_tac.txt", "a")
 
 g.write(f"{safety[0]},{demand},LOS\n")
 g.write(f"{safety[1]},{demand},NMAC\n")

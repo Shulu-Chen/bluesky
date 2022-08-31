@@ -496,7 +496,7 @@ print(f"number of LOS:{safety[0]}")
 print(f"number of MAC:{safety[1]}")
 print(f"average delay:{round(efficiency)} s")
 print(f"Type={type}")
-g=open("result\\NYC data.txt","a")
+g=open("../result/NYC data.txt", "a")
 if type = 0:
     g.write(f"{safety[0]},A,LOS_high\n")
     g.write(f"{safety[1]},A,NMAC_high\n")
