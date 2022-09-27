@@ -1,3 +1,51 @@
+# Summary
+## Shulu Chen @ GWU
+
+Fork from the BlueSky Air Traffic Simulator developed by TU Delft. The original ReadMe can be seen below.
+
+In this work, we built the NYC structured airspace by helicopter route and replaced the vertiport data.
+
+We designed a trajectory generator in bluesky/scenario/generate_trj.py to generate all of required operations in BlueSky.
+
+A video demo can be found [here](https://youtu.be/vRyiNrF8ic4).
+
+# Installation
+
+To run the case study please run the following steps:
+
+For windows:
+1. Download NYC branch of this repository.
+   git clone -b NYC https://github.com/Shulu-Chen/bluesky.git
+2. Create a python 3.6 environment (python 3.7 not work).
+3. Install all these packages: ‘pyqt5’, ’pyqtwebengine’, ’numpy’, ’scipy’, ’matplotlib’, ’pandas’, ’msgpack’, ’zmq’, ’pygame’, ‘pyopengl’, ‘rtree’.
+4. Run BlueSky.py to see if you install it successfully.
+5. Run generate_trj.py to generate a new operation list called NYC_test.scn.
+6. In BlueSky GUI, click “file->open” and choose NYC_test.scn, then you can play with that.
+
+For MAC:
+
+All steps are the same, you still need to restart your computer. Additionally, MAC may not support PyOpenGL. You can fix this issue by editing PyOpenGL file OpenGL/platform/ctypesloader.py, and changing the line
+```
+fullName = util.find_library( name )
+```
+to
+```
+fullName = '/System/Library/Frameworks/OpenGL.framework/OpenGL'
+```
+# Features of trajectory generator
+
+1. Run scenario/deconflication_trj.py to generate the flight plan.
+2. The UAV will depart randomly in any ORIG by Poisson dist.
+3. The generator will fulfill all necessary waypoints the UAV need.
+4. For confliction detection, currently we set the buffer radius as 100 meter.
+5. The architecture of our current setting:
+![image](https://github.com/Shulu-Chen/bluesky/blob/NYC/ARC.png)
+
+
+------------------------------------------------------------------------------------------------------------------------------
+
+
+
 # BlueSky - The Open Air Traffic Simulator
 
 [![Open in Visual Studio Code](https://img.shields.io/static/v1?logo=visualstudiocode&label=&message=Open%20in%20Visual%20Studio%20Code&labelColor=2c2c32&color=007acc&logoColor=007acc)](https://open.vscode.dev/TUDelft-CNS-ATM/bluesky)

@@ -14,6 +14,25 @@
       "d_range_max": "maximum flight range (km)"
     }
   },
+
+  "ELE01": {
+    "name": "Electric quadrotor aircraft",
+    "n_engines": 4,
+    "engine_type": "TS",
+    "mtow": 567.8976,
+    "oew": 452.232,
+    "mfc": 0,
+    "engines": [["motor1", 16.10712], ["motor2", 16.10712],["motor3", 16.10712],["motor4", 16.10712]],
+    "envelop": {
+      "v_min": -20,
+      "v_max": 36.5,
+      "vs_min": -5.5,
+      "vs_max": 5.5,
+      "h_max": 6096,
+      "d_range_max": 665
+    }
+  },
+
   "EC35": {
     "name": "Eurocopter EC135",
     "n_engines": 2,
