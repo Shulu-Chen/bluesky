@@ -1,9 +1,10 @@
 output
 scenario/ic.scn
-data/cache
-data/grib
-data/performance/BADA/*
-!/data/performance/BADA/README.md
+cache
+bluesky/resources/grib
+bluesky/resources/netcdf
+bluesky/resources/performance/BADA/*
+!bluesky/resources/performance/BADA/README.md
 
 # Sphinx documentation
 docs/_build/
@@ -49,6 +50,7 @@ tmp/
 *.egg-info/
 .installed.cfg
 *.egg
+.eggs/*
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
@@ -82,9 +84,6 @@ docs/_build/
 # PyBuilder
 target/
 
-data/cache
-data/performance/BADA/*
-!/data/performance/BADA/README
 ssd.obj
 
 # IPython

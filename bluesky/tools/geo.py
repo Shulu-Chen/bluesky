@@ -1,10 +1,9 @@
 """ This module defines a set of standard geographic functions and constants for
     easy use in BlueSky. """
-from os import path
 import numpy as np
 from math import *
 
-from bluesky import settings
+import bluesky as bs
 
 
 # Constants
@@ -173,7 +172,7 @@ def qdrdist_matrix(lat1, lon1, lat2, lon2):
 
 
 def latlondist(latd1, lond1, latd2, lond2):
-    """ Calculates distance using haversine formulae and avaerage r from wgs'84
+    """ Calculates only distance using haversine notation of the same formulae and average r from wgs'84
         Input:
               two lat/lon positions in degrees
         Out:
@@ -493,7 +492,7 @@ def initdecl_data():
     # lat : 89 ... -90
     # Lon: -180 ... 179
     global decl_read, decl_lat_lon
-    dec_table = np.genfromtxt(path.join(settings.navdata_path, 'geo_declination_data.csv'),
+    dec_table = np.genfromtxt(bs.resource(bs.settings.navdata_path) / 'geo_declination_data.csv',
                               comments='#',delimiter=",")
 
     decl = dec_table[:,4]

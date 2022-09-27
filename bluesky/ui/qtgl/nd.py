@@ -1,6 +1,10 @@
 """ Navigation display for the QTGL gui."""
-from PyQt5.QtCore import qCritical, QTimer
-from PyQt5.QtOpenGL import QGLWidget
+try:
+    from PyQt5.QtCore import qCritical, QTimer
+    from PyQt5.QtOpenGL import QGLWidget
+except ImportError:
+    from PyQt6.QtCore import qCritical, QTimer
+    from PyQt6.QtOpenGLWidgets import QOpenGLWidget as QGLWidget
 import OpenGL.GL as gl
 from math import sin, cos, radians
 import numpy as np
@@ -181,11 +185,11 @@ class ND(QGLWidget):
 
         try:
             # Compile shaders and link color shader program
-            self.color_shader = BlueSkyProgram('data/graphics/shaders/nd-normal.vert', 'data/graphics/shaders/nd-color.frag')
+            self.color_shader = BlueSkyProgram('graphics/shaders/nd-normal.vert', 'graphics/shaders/nd-color.frag')
             self.color_shader.bind_uniform_buffer('global_data', self.globaldata)
 
             # Compile shaders and link text shader program
-            self.text_shader = BlueSkyProgram('data/graphics/shaders/nd-text.vert', 'data/graphics/shaders/nd-text.frag')
+            self.text_shader = BlueSkyProgram('graphics/shaders/nd-text.vert', 'graphics/shaders/nd-text.frag')
             self.text_shader.bind_uniform_buffer('global_data', self.globaldata)
 
         except RuntimeError as e:

@@ -1,10 +1,9 @@
 ''' Load visual data from text files.'''
 from bluesky.navdatabase.loadnavdata_txt import thresholds, thrpoints
-import os
 from zipfile import ZipFile
 import numpy as np
 import bluesky as bs
-from bluesky import settings
+
 
 REARTH_INV = 1.56961231e-7
 
@@ -57,7 +56,7 @@ def load_coastline_txt():
     # coastlines to numpy arrays with lat/lon
     coast = []
     clat = clon = 0.0
-    with open(os.path.join(settings.navdata_path, 'coastlines.dat'), 'r') as f:
+    with open(bs.resource(bs.settings.navdata_path) / 'coastlines.dat', 'r') as f:
         print("Reading coastlines.dat")
         for line in f:
             line = line.strip()
@@ -81,9 +80,13 @@ def load_coastline_txt():
 
 
 # Only try this if BlueSky is started in qtgl gui mode
-if bs.gui_type == 'qtgl':
-    from PyQt5.QtCore import Qt
-    from PyQt5.QtWidgets import QApplication, QProgressDialog
+if bs.gui == 'qtgl':
+    try:
+        from PyQt5.QtCore import Qt
+        from PyQt5.QtWidgets import QApplication, QProgressDialog
+    except ImportError:
+        from PyQt6.QtCore import Qt
+        from PyQt6.QtWidgets import QApplication, QProgressDialog
     from bluesky.ui.polytools import PolygonSet, BoundingBox
 
 
@@ -94,12 +97,13 @@ if bs.gui_type == 'qtgl':
                 print(text)
             else:
                 self.dialog = QProgressDialog(text, 'Cancel', 0, 100)
-                self.dialog.setWindowFlags(Qt.WindowStaysOnTopHint)
+                # self.dialog.setWindowFlags(Qt.WindowStaysOnTopHint)
+                self.dialog.setModal(True)
                 self.dialog.show()
 
         def update(self, value):
             if self.dialog:
-                self.dialog.setValue(value)
+                self.dialog.setValue(int(value))
                 QApplication.processEvents()
             else:
                 print('Progress: %.2f%% done' % value)
@@ -126,7 +130,7 @@ if bs.gui_type == 'qtgl':
         apt_bb = BoundingBox()
         count = 0
         bytecount = 0
-        zfile = ZipFile(os.path.join(settings.navdata_path, 'apt.zip'))
+        zfile = ZipFile(bs.resource(bs.settings.navdata_path) / 'apt.zip')
         fsize = float(zfile.getinfo('apt.dat').file_size)
         print("Reading apt.dat from apt.zip")
         with zfile.open('apt.dat', 'r') as f:

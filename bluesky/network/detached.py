@@ -10,8 +10,8 @@ class Node:
         self.host_id = b''
         self.running = True
 
-    def step(self):
-        ''' Perform one iteration step. Reimplemented in Simulation. '''
+    def update(self):
+        ''' Update timers. '''
         # Process timers
         Timer.update_timers()
 
@@ -28,8 +28,12 @@ class Node:
         ''' Start the main loop of this node. '''
         while self.running:
             # Perform a simulation step
-            self.step()
+            self.update()
             bs.sim.step()
+
+    def connect(self):
+        ''' Connect node to the BlueSky server. This does nothing in detached mode. '''
+        pass
 
     def addnodes(self, count=1):
         pass

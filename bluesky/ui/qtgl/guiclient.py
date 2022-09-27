@@ -1,5 +1,8 @@
 ''' I/O Client implementation for the QtGL gui. '''
-from PyQt5.QtCore import QTimer
+try:
+    from PyQt5.QtCore import QTimer
+except ImportError:
+    from PyQt6.QtCore import QTimer
 import numpy as np
 
 from bluesky.ui import palette
@@ -10,7 +13,7 @@ from bluesky.core import Signal
 from bluesky.tools.aero import ft
 
 # Globals
-UPDATE_ALL = ['SHAPE', 'TRAILS', 'CUSTWPT', 'PANZOOM', 'ECHOTEXT']
+UPDATE_ALL = ['SHAPE', 'TRAILS', 'CUSTWPT', 'PANZOOM', 'ECHOTEXT', 'ROUTEDATA']
 ACTNODE_TOPICS = [b'ACDATA', b'PLOT*', b'ROUTEDATA*']
 
 
@@ -169,6 +172,10 @@ class nodeData:
         self.custwplbl = ''
         self.custwplat = np.array([], dtype=np.float32)
         self.custwplon = np.array([], dtype=np.float32)
+
+        self.naircraft = 0
+        self.acdata = ACDataEvent()
+        self.routedata = RouteDataEvent()
 
         # Filteralt settings
         self.filteralt = False

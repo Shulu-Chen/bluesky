@@ -73,7 +73,7 @@ def makeLogfileName(logname, prefix: str = ''):
         fname = "%s_%s_%s.log" % (logname, stack.get_scenname(), timestamp)
     else:
         fname = "%s_%s_%s_%s.log" % (logname, stack.get_scenname(), prefix, timestamp)
-    return settings.log_path + '/' + fname
+    return bs.resource(settings.log_path) / fname
 
 
 def col2txt(col, nrows):
@@ -144,7 +144,7 @@ class CSVLogger:
                 if varobj:
                     selvars.append(varobj)
                 else:
-                    return False, 'Variable {} not found'.format(v)
+                    return False, f'Variable {v} not found'
 
         self.selvars = selvars
         return True

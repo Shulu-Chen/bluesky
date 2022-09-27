@@ -19,8 +19,8 @@ class Node:
         self.event_port = event_port
         self.stream_port = stream_port
 
-    def step(self):
-        ''' Perform one iteration step. Reimplemented in Simulation. '''
+    def update(self):
+        ''' Update timers and perform I/O. '''
         # Process timers
         Timer.update_timers()
         # Get new events from the I/O thread
@@ -41,13 +41,13 @@ class Node:
         ''' Connect node to the BlueSky server. '''
         # Initialization of sockets.
         self.event_io.setsockopt(zmq.IDENTITY, self.node_id)
-        self.event_io.connect('tcp://localhost:{}'.format(self.event_port))
-        self.stream_out.connect('tcp://localhost:{}'.format(self.stream_port))
+        self.event_io.connect(f'tcp://localhost:{self.event_port}')
+        self.stream_out.connect(f'tcp://localhost:{self.stream_port}')
 
         # Start communication, and receive this node's ID
         self.send_event(b'REGISTER')
         self.host_id = self.event_io.recv_multipart()[0]
-        # print('Node connected, id={}'.format(self.node_id))
+        # print(f'Node connected, id={self.node_id}')
 
     def quit(self):
         ''' Quit the simulation process. '''
@@ -63,10 +63,10 @@ class Node:
         ''' Start the main loop of this node. '''
         while self.running:
             # Perform a simulation step
-            self.step()
-            bs.sim.step()
+            self.update()
+            bs.sim.update()
             # Update screen logic
-            bs.scr.step()
+            bs.scr.update()
 
     def addnodes(self, count=1):
         self.send_event(b'ADDNODES', count)

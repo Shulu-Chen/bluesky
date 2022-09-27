@@ -1,6 +1,7 @@
 ''' Main simulation-side stack functions. '''
+from fnmatch import fnmatch
 import math
-import os
+from pathlib import Path
 import traceback
 import bluesky as bs
 from bluesky.stack.stackbase import Stack, stack, checkscen, forward
@@ -47,16 +48,14 @@ def reset():
     argparser.reset()
 
 
-
-
-
-def process():
+def process(from_pcall=None):
     ''' Sim-side stack processing. '''
     # First check for commands in scenario file
-    checkscen()
+    if from_pcall is None:
+        checkscen()
 
     # Process stack of commands
-    for cmdline in Stack.commands():
+    for cmdline in Stack.commands(from_pcall):
         success = True
         echotext = ''
         echoflags = bs.BS_OK
@@ -133,21 +132,20 @@ def process():
             bs.scr.echo(echotext, echoflags)
 
     # Clear the processed commands
-    Stack.clear()
+    if from_pcall is None:
+        Stack.clear()
 
 
 def readscn(fname):
     ''' Read a scenario file. '''
-    # Split the incoming filename into a path + filename and an extension
-    base, ext = os.path.splitext(fname.replace("\\", "/"))
-    if not os.path.isabs(base):
-        base = os.path.join(settings.scenario_path, base)
-    ext = ext or ".scn"
+    if not fname:
+        return
+    # Ensure .scn suffix and specify path if necessary
+    fname = Path(fname).with_suffix('.scn')
+    if not fname.is_absolute():
+        fname = bs.resource(settings.scenario_path) / fname
 
-    # The entire filename, possibly with added path and extension
-    fname_full = os.path.normpath(base + ext)
-
-    with open(fname_full, "r") as fscen:
+    with open(fname, "r") as fscen:
         prevline = ''
         for line in fscen:
             line = line.strip()
@@ -199,48 +197,59 @@ def pcall(fname, *pcall_arglst):
         pcall_arglst = [acid] + list(pcall_arglst[1:])
 
     # Check for relative or absolute time
-    absrel = "REL"  # default relative to the time of call
-    if pcall_arglst and pcall_arglst[0] in ("ABS", "REL"):
-        absrel = pcall_arglst[0]
+    isrelative = True  # default relative to the time of call
+    if pcall_arglst and pcall_arglst[0] in ('ABS', 'REL'):
+        isrelative = pcall_arglst[0] == 'ABS'
         pcall_arglst = pcall_arglst[1:]
+
+    try:
+        merge(readscn(fname), *pcall_arglst, isrelative=isrelative)
+
+    except FileNotFoundError as e:
+        return False, f"PCALL: File not found'{e.filename}'"
+
+
+def merge(source, *args, isrelative=True):
+    ''' Merge scenario commands from source to current scenario.'''
 
     # If timestamps in file should be interpreted as relative we need to add
     # the current simtime to every timestamp
-    t_offset = bs.sim.simt if absrel == "REL" else 0.0
+    t_offset = bs.sim.simt if isrelative else 0.0
 
     # Read the scenario file
-    # readscn(fname, pcall_arglst, t_offset)
     insidx = 0
     instime = bs.sim.simt
 
-    try:
-        for (cmdtime, cmdline) in readscn(fname):
+    # All commands with timestamps at the current sim time or earlier should be called immediately
+    callnow = []
+    for (cmdtime, cmdline) in source:
 
-            # Time offset correction
-            cmdtime += t_offset
+        # Time offset correction
+        cmdtime += t_offset
 
-            # Replace %0, %1 with pcall_arglst[0], pcall_arglst[1], etc.
-            if pcall_arglst:
-                for i, argtxt in enumerate(pcall_arglst):
-                    cmdline = cmdline.replace(f"%{i}", argtxt)
+        # Replace %0, %1 with pcall_arglst[0], pcall_arglst[1], etc.
+        if args:
+            for i, argtxt in enumerate(args):
+                cmdline = cmdline.replace(f"%{i}", argtxt)
 
-            if not Stack.scentime or cmdtime >= Stack.scentime[-1]:
-                Stack.scentime.append(cmdtime)
-                Stack.scencmd.append(cmdline)
-            else:
-                if cmdtime > instime:
-                    insidx, instime = next(
-                        ((j, t) for j, t in enumerate(Stack.scentime) if t >= cmdtime),
-                        (len(Stack.scentime), Stack.scentime[-1]),
-                    )
-                Stack.scentime.insert(insidx, cmdtime)
-                Stack.scencmd.insert(insidx, cmdline)
-                insidx += 1
+        if cmdtime <= bs.sim.simt:
+            callnow.append((cmdline, None))
+        elif not Stack.scentime or cmdtime >= Stack.scentime[-1]:
+            Stack.scentime.append(cmdtime)
+            Stack.scencmd.append(cmdline)
+        else:
+            if cmdtime > instime:
+                insidx, instime = next(
+                    ((j, t) for j, t in enumerate(Stack.scentime) if t >= cmdtime),
+                    (len(Stack.scentime), Stack.scentime[-1]),
+                )
+            Stack.scentime.insert(insidx, cmdtime)
+            Stack.scencmd.insert(insidx, cmdline)
+            insidx += 1
 
-        # stack any commands that are already due
-        checkscen()
-    except FileNotFoundError as e:
-        return False, f"PCALL: File not found'{e.filename}'"
+    # execute any commands that are already due
+    if callnow:
+        process(callnow)
 
 
 @command(aliases=('LOAD', 'OPEN'))
@@ -257,31 +266,33 @@ def ic(filename : 'string' = ''):
     # Get the filename of new scenario
     if not filename:
         filename = bs.scr.show_file_dialog()
+        if not filename:
+            # Only PyGame returns a filename from the dialog here
+            return
 
     # Clean up filename
-    filename = filename.strip()
+    filename = Path(filename)
 
     # Reset sim and open new scenario file
-    if filename:
-        try:
-            for (cmdtime, cmd) in readscn(filename):
-                Stack.scentime.append(cmdtime)
-                Stack.scencmd.append(cmd)
-            Stack.scenname, _ = os.path.splitext(os.path.basename(filename))
+    try:
+        for (cmdtime, cmd) in readscn(filename):
+            Stack.scentime.append(cmdtime)
+            Stack.scencmd.append(cmd)
+        Stack.scenname = filename.stem
 
-            # Remember this filename in IC.scn in scenario folder
-            with open(settings.scenario_path + "/" + "ic.scn", "w") as keepicfile:
-                keepicfile.write(
-                    "# This file is used by BlueSky to save the last used scenario file\n"
-                )
-                keepicfile.write(
-                    "# So in the console type 'IC IC' to restart the previously used scenario file\n"
-                )
-                keepicfile.write("00:00:00.00>IC " + filename + "\n")
+        # Remember this filename in IC.scn in scenario folder
+        with open(bs.resource(settings.scenario_path) / "ic.scn", "w") as keepicfile:
+            keepicfile.write(
+                "# This file is used by BlueSky to save the last used scenario file\n"
+            )
+            keepicfile.write(
+                "# So in the console type 'IC IC' to restart the previously used scenario file\n"
+            )
+            keepicfile.write(f"00:00:00.00>IC {filename}\n")
 
-            return True, f"IC: Opened {filename}"
-        except FileNotFoundError:
-            return False, f"IC: File not found: {filename}"
+        return True, f"IC: Opened {filename}"
+    except FileNotFoundError:
+        return False, f"IC: File not found: {filename}"
 
 
 @command(aliases=('SCEN',))
@@ -375,13 +386,14 @@ def makedoc():
     ''' MAKEDOC: Make markdown templates for all stack functions
         that don't have a doc page yet.
     '''
-    if not os.path.isdir("tmp"):
-        os.mkdir("tmp")
+    tmp = Path('tmp')
+    if not tmp.is_dir():
+        tmp.mkdir()
     # Get unique set of commands
     cmdobjs = set(Command.cmddict.values())
     for o in cmdobjs:
-        if not os.path.isfile(f"data/html/{o.name}.html"):
-            with open(f"tmp/{o.name.lower()}.md", "w") as f:
+        if not bs.resource(f"html/{o.name}.html").is_file():
+            with open(tmp / f"{o.name.lower()}.md", "w") as f:
                 f.write(
                     f"# {o.name}: {o.name.capitalize()}\n"
                     + o.help

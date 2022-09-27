@@ -1,18 +1,14 @@
 """ BlueSky aircraft performance calculations."""
-import os
-
 from xml.etree import ElementTree
 from math import *
 import numpy as np
-import bluesky as bs
-from bluesky.tools.aero import ft, g0, a0, T0, rho0, gamma1, gamma2,  beta, R, \
-    kts, lbs, inch, sqft, fpm, vtas2cas
+from bluesky.tools.aero import ft, g0, rho0, kts, lbs, inch, sqft, fpm
 
 from .performance import esf, phases, calclimits, PHASE
-from bluesky import settings
+import bluesky as bs
 
 # Register settings defaults
-settings.set_variable_defaults(perf_path='data/performance', verbose=False)
+bs.settings.set_variable_defaults(perf_path='performance/BS', verbose=False)
 
 class CoeffBS:
     """
@@ -27,9 +23,6 @@ class CoeffBS:
     Technological, Operational, and Cost Perspectives. Master's Thesis, Massachusetts
     Institute of Technology, Boston, U.S.
     """
-
-    def __init__(self):
-        return
 
     def convert(self, value, unit):
         factors = {'kg': 1., 't':1000., 'lbs': lbs, 'N': 1., 'W': 1, \
@@ -109,10 +102,9 @@ class CoeffBS:
 
         # parse AC files
 
-        path = os.path.join(settings.perf_path, 'BS/aircraft')
-        files = os.listdir(path)
-        for fname in files:
-            acdoc = ElementTree.parse(os.path.join(path, fname))
+        path = bs.resource(bs.settings.perf_path) / 'BS/aircraft'
+        for fname in path.iterdir():
+            acdoc = ElementTree.parse(fname)
 
             #actype = doc.find('ac_type')
             self.atype.append(acdoc.find('ac_type').text)
@@ -289,10 +281,9 @@ class CoeffBS:
         self.PSFC_CR     = [] # SFC cruise
 
         # parse engine files
-        path = os.path.join(settings.perf_path, 'BS/engines/')
-        files = os.listdir(path)
-        for fname in files:
-            endoc = ElementTree.parse(os.path.join(path, fname))
+        path = bs.resource(bs.settings.perf_path) / 'BS/engines/'
+        for fname in path.iterdir():
+            endoc = ElementTree.parse(fname)
             self.enlist.append(endoc.find('engines/engine').text)
 
             # thrust
@@ -359,5 +350,3 @@ class CoeffBS:
         self.ffcr=np.array(self.ffcr)
         self.ffid=np.array(self.ffid)
         self.ffap=np.array(self.ffap)
-
-        return

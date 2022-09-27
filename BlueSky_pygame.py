@@ -9,13 +9,13 @@ from bluesky.ui.pygame import splash
 def main():
     """ Start the mainloop (and possible other threads) """
     splash.show()
-    bs.init(pygame=True)
+    bs.init(gui='pygame')
     # bs.sim.op()
     bs.scr.init()
 
     # Main loop for BlueSky
     while not bs.sim.state == bs.END:
-        bs.sim.step()   # Update sim
+        bs.sim.update()   # Update sim
         bs.scr.update()   # GUI update
 
     bs.sim.quit()

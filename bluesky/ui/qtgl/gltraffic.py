@@ -61,16 +61,16 @@ class Traffic(glh.RenderObject, layer=100):
     def create(self):
         ac_size = settings.ac_size
         wpt_size = settings.wpt_size
-        self.hdg.create(MAX_NAIRCRAFT * 4, glh.GLBuffer.StreamDraw)
-        self.lat.create(MAX_NAIRCRAFT * 4, glh.GLBuffer.StreamDraw)
-        self.lon.create(MAX_NAIRCRAFT * 4, glh.GLBuffer.StreamDraw)
-        self.alt.create(MAX_NAIRCRAFT * 4, glh.GLBuffer.StreamDraw)
-        self.tas.create(MAX_NAIRCRAFT * 4, glh.GLBuffer.StreamDraw)
-        self.color.create(MAX_NAIRCRAFT * 4, glh.GLBuffer.StreamDraw)
-        self.lbl.create(MAX_NAIRCRAFT * 24, glh.GLBuffer.StreamDraw)
-        self.asasn.create(MAX_NAIRCRAFT * 24, glh.GLBuffer.StreamDraw)
-        self.asase.create(MAX_NAIRCRAFT * 24, glh.GLBuffer.StreamDraw)
-        self.rpz.create(MAX_NAIRCRAFT * 4, glh.GLBuffer.StreamDraw)
+        self.hdg.create(MAX_NAIRCRAFT * 4, glh.GLBuffer.UsagePattern.StreamDraw)
+        self.lat.create(MAX_NAIRCRAFT * 4, glh.GLBuffer.UsagePattern.StreamDraw)
+        self.lon.create(MAX_NAIRCRAFT * 4, glh.GLBuffer.UsagePattern.StreamDraw)
+        self.alt.create(MAX_NAIRCRAFT * 4, glh.GLBuffer.UsagePattern.StreamDraw)
+        self.tas.create(MAX_NAIRCRAFT * 4, glh.GLBuffer.UsagePattern.StreamDraw)
+        self.color.create(MAX_NAIRCRAFT * 4, glh.GLBuffer.UsagePattern.StreamDraw)
+        self.lbl.create(MAX_NAIRCRAFT * 24, glh.GLBuffer.UsagePattern.StreamDraw)
+        self.asasn.create(MAX_NAIRCRAFT * 24, glh.GLBuffer.UsagePattern.StreamDraw)
+        self.asase.create(MAX_NAIRCRAFT * 24, glh.GLBuffer.UsagePattern.StreamDraw)
+        self.rpz.create(MAX_NAIRCRAFT * 4, glh.GLBuffer.UsagePattern.StreamDraw)
 
         self.ssd.create(lat1=self.lat, lon1=self.lon, alt1=self.alt,
                         tas1=self.tas, trk1=self.hdg)
@@ -81,7 +81,8 @@ class Traffic(glh.RenderObject, layer=100):
                              trk0=self.hdg, asasn=self.asasn,
                              asase=self.asase, instance_divisor=1)
 
-        self.protectedzone.create(radius=1.0)
+        #self.protectedzone.create(radius=1.0)
+        self.protectedzone.create(radius=0.5)
         self.protectedzone.set_attribs(lat=self.lat, lon=self.lon, scale=self.rpz,
                                        color=self.color, instance_divisor=1)
 
@@ -96,10 +97,10 @@ class Traffic(glh.RenderObject, layer=100):
         self.aclabels.create(self.lbl, self.lat, self.lon, self.color,
                              (ac_size, -0.5 * ac_size), instanced=True)
 
-        self.cpalines.create(vertex=MAX_NCONFLICTS * 16, color=palette.conflict, usage=glh.GLBuffer.StreamDraw)
+        self.cpalines.create(vertex=MAX_NCONFLICTS * 16, color=palette.conflict, usage=glh.GLBuffer.UsagePattern.StreamDraw)
 
         # ------- Aircraft Route -------------------------
-        self.route.create(vertex=ROUTE_SIZE * 8, color=palette.route, usage=glh.gl.GL_DYNAMIC_DRAW)
+        self.route.create(vertex=ROUTE_SIZE * 8, color=palette.route, usage=glh.GLBuffer.UsagePattern.DynamicDraw)
 
         self.routelbl.create(ROUTE_SIZE * 24, ROUTE_SIZE * 4, ROUTE_SIZE * 4,
                              palette.route, (wpt_size, 0.5 * wpt_size), instanced=True)
@@ -228,10 +229,10 @@ class Traffic(glh.RenderObject, layer=100):
                     # Speed
                     if spd < 0:
                         txt += "--- "
-                    elif spd > 2.0:
+                    elif spd > actdata.casmachthr:
                         txt += "%03d" % int(round(spd / kts))
                     else:
-                        txt += "M{:.2f}".format(spd)  # Mach number
+                        txt += f"M{spd:.2f}" # Mach number
 
                 wpname += txt.ljust(24)  # Fill out with spaces
             self.routelbl.update(texdepth=np.array(wpname.encode('ascii', 'ignore')),
@@ -260,6 +261,7 @@ class Traffic(glh.RenderObject, layer=100):
             data.rpz = data.rpz[idx]
         naircraft = len(data.lat)
         actdata.translvl = data.translvl
+        actdata.casmachthr = data.casmachthr
         # self.asas_vmin = data.vmin # TODO: array should be attribute not uniform
         # self.asas_vmax = data.vmax
 

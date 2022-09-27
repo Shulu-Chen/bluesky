@@ -1,16 +1,10 @@
 """ OpenAP performance library. """
-import os
 import json
-import numpy as np
 import pandas as pd
 import bluesky as bs
-from bluesky import settings
-from bluesky.settings import get_project_root
 
 
-settings.set_variable_defaults(perf_path_openap=
-                               os.path.join(get_project_root(),
-                                            "data", "performance", "OpenAP"))
+bs.settings.set_variable_defaults(perf_path_openap="performance/OpenAP")
 
 LIFT_FIXWING = 1  # fixwing aircraft
 LIFT_ROTOR = 2  # rotor aircraft
@@ -19,22 +13,12 @@ ENG_TYPE_TF = 1  # turbofan, fixwing
 ENG_TYPE_TP = 2  # turboprop, fixwing
 ENG_TYPE_TS = 3  # turboshlft, rotor
 
-synonyms_db = settings.perf_path_openap + "/synonym.dat"
-
-fixwing_aircraft_db = settings.perf_path_openap + "/fixwing/aircraft.json"
-fixwing_engine_db = settings.perf_path_openap + "/fixwing/engines.csv"
-fixwing_envelops_dir = settings.perf_path_openap + "/fixwing/wrap/"
-fixwing_dragpolar_db = settings.perf_path_openap + "/fixwing/dragpolar.csv"
-
-rotor_aircraft_db = settings.perf_path_openap + "/rotor/aircraft.json"
-
 
 class Coefficient:
     def __init__(self):
-
         # Load synonyms.dat text file into dictionary
         self.synodict = {}
-        with open(synonyms_db, "r") as f_syno:
+        with open(bs.resource(bs.settings.perf_path_openap) / 'synonym.dat', "r") as f_syno:
             for line in f_syno.readlines():
                 if line.count("#") > 0:
                     dataline, comment = line.split("#")
@@ -49,7 +33,7 @@ class Coefficient:
                 self.synodict[acmod] = synomod
 
         self.acs_fixwing = self._load_all_fixwing_flavor()
-        self.engines_fixwing = pd.read_csv(fixwing_engine_db, encoding="utf-8")
+        self.engines_fixwing = pd.read_csv(bs.resource(bs.settings.perf_path_openap) / "fixwing/engines.csv", encoding="utf-8")
         self.limits_fixwing = self._load_all_fixwing_envelop()
 
         self.acs_rotor = self._load_all_rotor_flavor()
@@ -58,7 +42,7 @@ class Coefficient:
         self.actypes_fixwing = list(self.acs_fixwing.keys())
         self.actypes_rotor = list(self.acs_rotor.keys())
 
-        df = pd.read_csv(fixwing_dragpolar_db, index_col="mdl")
+        df = pd.read_csv(bs.resource(bs.settings.perf_path_openap) / "fixwing/dragpolar.csv", index_col="mdl")
         self.dragpolar_fixwing = df.to_dict(orient="index")
         self.dragpolar_fixwing["NA"] = df.mean().to_dict()
 
@@ -68,9 +52,9 @@ class Coefficient:
         warnings.simplefilter("ignore")
 
         # read fixwing aircraft and engine files
-        allengines = pd.read_csv(fixwing_engine_db, encoding="utf-8")
+        allengines = pd.read_csv(bs.resource(bs.settings.perf_path_openap) / "fixwing/engines.csv", encoding="utf-8")
         allengines["name"] = allengines["name"].str.upper()
-        acs = json.load(open(fixwing_aircraft_db, "r"))
+        acs = json.load(open(bs.resource(bs.settings.perf_path_openap) / "fixwing/aircraft.json", "r"))
         acs.pop("__comment")
         acs_ = {}
 
@@ -91,7 +75,7 @@ class Coefficient:
 
     def _load_all_rotor_flavor(self):
         # read rotor aircraft
-        acs = json.load(open(rotor_aircraft_db, "r"))
+        acs = json.load(open(bs.resource(bs.settings.perf_path_openap) / "rotor/aircraft.json", "r"))
         acs.pop("__comment")
         acs_ = {}
         for mdl, ac in acs.items():
@@ -104,10 +88,10 @@ class Coefficient:
         All unit in SI"""
         limits_fixwing = {}
         for mdl, ac in self.acs_fixwing.items():
-            fenv = fixwing_envelops_dir + mdl.lower() + ".csv"
+            fenv = bs.resource(bs.settings.perf_path_openap) / "fixwing/wrap" / (mdl.lower() + ".txt")
 
-            if os.path.exists(fenv):
-                df = pd.read_csv(fenv, index_col="param")
+            if fenv.is_file():
+                df = pd.read_fwf(fenv).set_index("variable")
                 limits_fixwing[mdl] = {}
                 limits_fixwing[mdl]["vminto"] = df.loc["to_v_lof"]["min"]
                 limits_fixwing[mdl]["vmaxto"] = df.loc["to_v_lof"]["max"]
@@ -142,17 +126,17 @@ class Coefficient:
                 limits_fixwing[mdl]["axmax"] = df.loc["to_acc_tof"]["max"]
 
                 limits_fixwing[mdl]["vsmax"] = max(
-                    df.loc["ic_vz_avg"]["max"],
-                    df.loc["cl_vz_avg_pre_cas"]["max"],
-                    df.loc["cl_vz_avg_cas_const"]["max"],
-                    df.loc["cl_vz_avg_mach_const"]["max"],
+                    df.loc["ic_vs_avg"]["max"],
+                    df.loc["cl_vs_avg_pre_cas"]["max"],
+                    df.loc["cl_vs_avg_cas_const"]["max"],
+                    df.loc["cl_vs_avg_mach_const"]["max"],
                 )
 
                 limits_fixwing[mdl]["vsmin"] = min(
-                    df.loc["ic_vz_avg"]["min"],
-                    df.loc["de_vz_avg_after_cas"]["min"],
-                    df.loc["de_vz_avg_cas_const"]["min"],
-                    df.loc["de_vz_avg_mach_const"]["min"],
+                    df.loc["ic_vs_avg"]["min"],
+                    df.loc["de_vs_avg_after_cas"]["min"],
+                    df.loc["de_vs_avg_cas_const"]["min"],
+                    df.loc["de_vs_avg_mach_const"]["min"],
                 )
 
         # create envolop based on synonym

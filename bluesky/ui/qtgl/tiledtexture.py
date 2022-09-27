@@ -1,14 +1,21 @@
 ''' Tile texture manager for BlueSky Qt/OpenGL gui. '''
+import traceback
 import math
-from os import makedirs, path
 import weakref
 from collections import OrderedDict
 from urllib.request import urlopen
 from urllib.error import URLError
 import numpy as np
+import gzip
 
-from PyQt5.QtCore import QObject, QRunnable, QThreadPool, pyqtSignal
-from PyQt5.QtGui import QImage
+try:
+    from PyQt5.Qt import Qt
+    from PyQt5.QtCore import QObject, QRunnable, QThreadPool, pyqtSignal, pyqtSlot, QT_VERSION_STR
+    from PyQt5.QtGui import QImage, qRgba
+except ImportError:
+    from PyQt6.QtCore import Qt
+    from PyQt6.QtCore import QObject, QRunnable, QThreadPool, pyqtSignal, pyqtSlot, QT_VERSION_STR
+    from PyQt6.QtGui import QImage, qRgba
 
 import bluesky as bs
 from bluesky.core import Signal
@@ -52,28 +59,43 @@ class Tile:
         self.idxx = idxx
         self.idxy = idxy
         self.ext = source[source.rfind('.'):]
+        self.ext = '.' + bs.settings.tile_sources[source]['source'][0].split('.')[-1]
 
         self.image = None
         # For the image data, check cache path first
-        fpath = path.join(bs.settings.cache_path, source, str(zoom), str(tilex))
-        fname = path.join(fpath, f'{tiley}{self.ext}')
-        if path.exists(fname):
-            self.image = QImage(fname).convertToFormat(QImage.Format_ARGB32)
+        fpath = bs.resource(bs.settings.cache_path) / source / str(zoom) / str(tilex)
+        fname = fpath / f'{tiley}{self.ext}'
+        if fname.exists():
+            self.image = QImage(fname.as_posix()).convertToFormat(QImage.Format.Format_ARGB32)
         else:
             # Make sure cache directory exists
-            makedirs(fpath, exist_ok=True)
+            fpath.mkdir(parents=True, exist_ok=True)
             for url in bs.settings.tile_sources[source]['source']:
                 try:
                     url_request = urlopen(url.format(
                         zoom=zoom, x=tilex, y=tiley))
-                    data = url_request.read()
-                    self.image = QImage.fromData(
-                        data).convertToFormat(QImage.Format_ARGB32)
-                    with open(fname, 'wb') as fout:
-                        fout.write(data)
+                    
+                    if url_request.status == 204:
+                        # if no content load a blank tile
+                        self.image = QImage(256, 256, QImage.Format.Format_ARGB32)
+                        self.image.fill(qRgba(255,255,255,0))
+
+                    else:
+                        data = url_request.read()
+
+                        if url_request.headers['Content-Encoding'] == 'gzip':
+                            # There is a chance that data may come as a gzip so decompress
+                            data = gzip.decompress(data)
+                                        
+                        self.image = QImage.fromData(
+                            data).convertToFormat(QImage.Format.Format_ARGB32)
+
+                        with open(fname, 'wb') as fout:
+                            fout.write(data)
                     break
                 except URLError as e:
-                    print(e, f'({url.format(zoom=zoom, x=tilex, y=tiley)})')
+                    print(f'Error loading {url.format(zoom=zoom, x=tilex, y=tiley)}:')
+                    print(traceback.format_exc())
 
 
 class TileLoader(QRunnable):
@@ -111,8 +133,20 @@ class TiledTextureMeta(type(glh.Texture)):
 
 class TiledTexture(glh.Texture, metaclass=TiledTextureMeta):
     ''' Tiled texture implementation for the BlueSky GL gui. '''
+    class SlotHolder(QObject):
+        ''' Wrapper class for Qt slot, which can only be owned by a
+            QObject-derived parent. We need slots to allow signal receiver
+            to be executed in the receiving (main) thread. '''
+        def __init__(self, callback):
+            super().__init__()
+            self.cb = callback
+
+        @pyqtSlot(Tile)
+        def slot(self, *args, **kwargs):
+            self.cb(*args, **kwargs)
+
     def __init__(self, glsurface, tilesource='opentopomap'):
-        super().__init__(target=glh.Texture.Target2DArray)
+        super().__init__(target=glh.Texture.Target.Target2DArray)
         self.threadpool = QThreadPool()
         tileinfo = bs.settings.tile_sources.get(tilesource)
         if not tileinfo:
@@ -120,19 +154,21 @@ class TiledTexture(glh.Texture, metaclass=TiledTextureMeta):
         max_dl = tileinfo.get('max_download_workers', bs.settings.max_download_workers)
         self.maxzoom = tileinfo.get('max_tile_zoom', bs.settings.max_tile_zoom)
         self.threadpool.setMaxThreadCount(min(bs.settings.max_download_workers, max_dl))
+        self.tileslot = TiledTexture.SlotHolder(self.load_tile)
         self.tilesource = tilesource
-        self.tilesize = (256,256)
+        self.tilesize = (256, 256)
+        self.curtileext = (0, 0, 0, 0)
+        self.curtilezoom = 1
         self.curtiles = OrderedDict()
         self.fullscreen = False
         self.offsetscale = np.array([0, 0, 1], dtype=np.float32)
         self.bbox = list()
         self.glsurface = glsurface
-        self.indextexture = glh.Texture(target=glh.Texture.Target2D)
+        self.indextexture = glh.Texture(target=glh.Texture.Target.Target2D)
         self.indexsampler_loc = 0
         self.arraysampler_loc = 0
         bs.net.actnodedata_changed.connect(self.actdata_changed)
         Signal('panzoom').connect(self.on_panzoom_changed)
-
 
     def add_bounding_box(self, lat0, lon0, lat1, lon1):
         ''' Add the bounding box of a textured shape.
@@ -146,45 +182,59 @@ class TiledTexture(glh.Texture, metaclass=TiledTextureMeta):
 
     def create(self):
         ''' Create this texture in GPU memory. '''
+
         if self.isCreated():
             return
         super().create()
+
         # Fetch a temporary tile image to get dimensions
         tmptile = Tile(self.tilesource, 1, 1, 1, 0, 0)
         img = tmptile.image
-        self.setFormat(glh.Texture.RGBA8_UNorm)
+        self.setFormat(glh.Texture.TextureFormat.RGBA8_UNorm)
         self.tilesize = (img.width(), img.height())
         self.setSize(img.width(), img.height())
         self.setLayers(bs.settings.tile_array_size)
         super().bind()
         self.allocateStorage()
-        self.setWrapMode(glh.Texture.DirectionS,
-                         glh.Texture.ClampToBorder)
-        self.setWrapMode(glh.Texture.DirectionT,
-                         glh.Texture.ClampToBorder)
-        self.setMinMagFilters(glh.Texture.Linear, glh.Texture.Linear)
+        self.setWrapMode(glh.Texture.CoordinateDirection.DirectionS,
+                         glh.Texture.WrapMode.ClampToBorder)
+        self.setWrapMode(glh.Texture.CoordinateDirection.DirectionT,
+                         glh.Texture.WrapMode.ClampToBorder)
+        self.setMinMagFilters(glh.Texture.Filter.Linear, glh.Texture.Filter.Linear)
 
         # Initialize index texture
         # RG = texcoord offset, B = zoom factor, A = array index
         itexw = int(np.sqrt(bs.settings.tile_array_size) * 4 / 3 + 10)
         itexh = int(np.sqrt(bs.settings.tile_array_size) * 3 / 4 + 10)
         self.indextexture.create()
-        self.indextexture.setFormat(glh.Texture.RGBA32I)
+        self.indextexture.setFormat(glh.Texture.TextureFormat.RGBA32I)
         self.indextexture.setSize(itexw, itexh)
         self.indextexture.bind(1)
         # self.indextexture.allocateStorage(glh.Texture.RGBA_Integer, glh.Texture.Int32)
 
         idxdata = np.array(itexw * itexh *
                            [(0, 0, 0, -1)], dtype=np.int32)
-        glh.gl.glTexImage2D_alt(glh.Texture.Target2D, 0, glh.Texture.RGBA32I,
-                                itexw, itexh, 0, glh.Texture.RGBA_Integer,
-                                glh.Texture.Int32, idxdata.tobytes())
+        if QT_VERSION_STR[0] == '5':
+            target_value = glh.Texture.Target.Target2D
+            text_rgba_value = glh.Texture.TextureFormat.RGBA32I
+            pixel_rgba_value = glh.Texture.PixelFormat.RGBA_Integer
+            pixel_type_value = glh.Texture.PixelType.Int32
 
-        self.indextexture.setWrapMode(glh.Texture.DirectionS,
-                                      glh.Texture.ClampToBorder)
-        self.indextexture.setWrapMode(glh.Texture.DirectionT,
-                                      glh.Texture.ClampToBorder)
-        self.indextexture.setMinMagFilters(glh.Texture.Nearest, glh.Texture.Nearest)
+        if QT_VERSION_STR[0] == '6':
+            target_value = glh.Texture.Target.Target2D.value
+            text_rgba_value = glh.Texture.TextureFormat.RGBA32I.value
+            pixel_rgba_value = glh.Texture.PixelFormat.RGBA_Integer.value
+            pixel_type_value = glh.Texture.PixelType.Int32.value
+
+        glh.gl.glTexImage2D_alt(target_value, 0, text_rgba_value,
+                                itexw, itexh, 0, pixel_rgba_value,
+                                pixel_type_value, idxdata.tobytes())
+
+        self.indextexture.setWrapMode(glh.Texture.CoordinateDirection.DirectionS,
+                                      glh.Texture.WrapMode.ClampToBorder)
+        self.indextexture.setWrapMode(glh.Texture.CoordinateDirection.DirectionT,
+                                      glh.Texture.WrapMode.ClampToBorder)
+        self.indextexture.setMinMagFilters(glh.Texture.Filter.Nearest, glh.Texture.Filter.Nearest)
 
         shader = glh.ShaderSet.get_shader('tiled')
         self.indexsampler_loc = shader.uniformLocation('tile_index')
@@ -208,10 +258,15 @@ class TiledTexture(glh.Texture, metaclass=TiledTextureMeta):
             self.on_panzoom_changed(True)
 
     def on_panzoom_changed(self, finished=False):
-        ''' Update textures whenever pan/zoom changes. '''
+        ''' Update textures whenever pan/zoom changes. 
+            
+            Arguments:
+            - finished: False when still in the process of panning/zooming.
+        '''
         # Check if textures need to be updated
         viewport = self.glsurface.viewportlatlon()
         surfwidth_px = self.glsurface.width()
+
         # First determine floating-point, hypothetical values
         # to calculate the required tile zoom level
         # floating-point number of tiles that fit in the width of the view
@@ -219,56 +274,59 @@ class TiledTexture(glh.Texture, metaclass=TiledTextureMeta):
         # Estimated width in longitude of one tile
         est_tilewidth = abs(viewport[3] - viewport[1]) / ntiles_hor
 
-        zoom = tilezoom(est_tilewidth, self.maxzoom)
+        self.curtilezoom = tilezoom(est_tilewidth, self.maxzoom)
         # With the tile zoom level get the required number of tiles
         # Top-left and bottom-right tiles:
-        x0, y0 = latlon2tilenum(*viewport[:2], zoom)
-        x1, y1 = latlon2tilenum(*viewport[2:], zoom)
+        x0, y0 = latlon2tilenum(*viewport[:2], self.curtilezoom)
+        x1, y1 = latlon2tilenum(*viewport[2:], self.curtilezoom)
         nx = abs(x1 - x0) + 1
         ny = abs(y1 - y0) + 1
+        self.curtileext = (x0, y0, x1, y1)
 
         # Calculate the offset of the top-left tile w.r.t. the screen top-left corner
-        tile0_topleft = np.array(tilenum2latlon(x0, y0, zoom))
-        tile0_bottomright = np.array(tilenum2latlon(x0 + 1, y0 + 1, zoom))
+        tile0_topleft = np.array(tilenum2latlon(x0, y0, self.curtilezoom))
+        tile0_bottomright = np.array(tilenum2latlon(x0 + 1, y0 + 1, self.curtilezoom))
         tilesize_latlon0 = np.abs(tile0_bottomright - tile0_topleft)
         offset_latlon0 = viewport[:2] - tile0_topleft
         tex_y0, tex_x0 = np.abs(offset_latlon0 / tilesize_latlon0)
 
         # Calculate the offset of the bottom-right tile w.r.t. the screen bottom right corner
-        tile1_topleft = np.array(tilenum2latlon(x1, y1, zoom))
-        tile1_bottomright = np.array(tilenum2latlon(x1 + 1, y1 + 1, zoom))
+        tile1_topleft = np.array(tilenum2latlon(x1, y1, self.curtilezoom))
+        tile1_bottomright = np.array(tilenum2latlon(x1 + 1, y1 + 1, self.curtilezoom))
         tilesize_latlon1 = np.abs(tile1_bottomright - tile1_topleft)
         offset_latlon1 = viewport[2:] - tile1_topleft
         tex_y1, tex_x1 = np.abs(offset_latlon1 / tilesize_latlon1) + [ny - 1, nx - 1]
+
         # Store global offset and scale for shader uniform
         self.offsetscale = np.array(
             [tex_x0, tex_y0, tex_x1 - tex_x0, tex_y1 - tex_y0], dtype=np.float32)
         # Determine required tiles
         index_tex = []
+
         curtiles = OrderedDict()
         curtiles_difzoom = OrderedDict()
         for j, y in enumerate(range(y0, y1 + 1)):
             for i, x in enumerate(range(x0, x1 + 1)):
                 # Find tile index if already loaded
-                idx = self.curtiles.pop((x, y, zoom), None)
+                idx = self.curtiles.pop((x, y, self.curtilezoom), None)
                 if idx is not None:
                     # correct zoom, so dx,dy=0, zoomfac=1
                     index_tex.extend((0, 0, 1, idx))
-                    curtiles[(x, y, zoom)] = idx
+                    curtiles[(x, y, self.curtilezoom)] = idx
                 else:
                     if finished:
                         # Tile not loaded yet, fetch in the background
-                        task = TileLoader(self.tilesource, zoom, x, y, i, j)
-                        task.signals.finished.connect(self.load_tile)
+                        task = TileLoader(self.tilesource, self.curtilezoom, x, y, i, j)
+                        task.signals.finished.connect(self.tileslot.slot, Qt.ConnectionType.QueuedConnection)
                         self.threadpool.start(task)
 
                     # In the mean time, check if more zoomed-out tiles are loaded that can be used
-                    for z in range(zoom - 1, max(2, zoom - 5), -1):
-                        zx, zy, dx, dy = zoomout_tilenum(x, y, z - zoom)
+                    for z in range(self.curtilezoom - 1, max(2, self.curtilezoom - 5), -1):
+                        zx, zy, dx, dy = zoomout_tilenum(x, y, z - self.curtilezoom)
                         idx = self.curtiles.pop((zx, zy, z), None)
                         if idx is not None:
                             curtiles_difzoom[(zx, zy, z)] = idx
-                            zoomfac = int(2 ** (zoom - z))
+                            zoomfac = int(2 ** (self.curtilezoom - z))
                             dxi = int(round(dx * zoomfac))
                             dyi = int(round(dy * zoomfac))
                             # offset zoom, so possible offset dxi, dyi
@@ -281,12 +339,23 @@ class TiledTexture(glh.Texture, metaclass=TiledTextureMeta):
         curtiles.update(curtiles_difzoom)
         curtiles.update(self.curtiles)
         self.curtiles = curtiles
+
         data = np.array(index_tex, dtype=np.int32)
         self.glsurface.makeCurrent()
         self.indextexture.bind(2)
-        glh.gl.glTexSubImage2D_alt(glh.Texture.Target2D, 0, 0, 0, nx, ny,
-                                   glh.Texture.RGBA_Integer,
-                                   glh.Texture.Int32, data.tobytes())
+
+        if QT_VERSION_STR[0] == '5':
+            target_value = glh.Texture.Target.Target2D
+            pixel_rgba_value = glh.Texture.PixelFormat.RGBA_Integer
+            pixel_type_value = glh.Texture.PixelType.Int32
+
+        if QT_VERSION_STR[0] == '6':
+            target_value = glh.Texture.Target.Target2D.value
+            pixel_rgba_value = glh.Texture.PixelFormat.RGBA_Integer.value
+            pixel_type_value = glh.Texture.PixelType.Int32.value
+
+        glh.gl.glTexSubImage2D_alt(target_value, 0, 0, 0, nx, ny,
+                                  pixel_rgba_value, pixel_type_value, data.tobytes())
 
     def load_tile(self, tile):
         ''' Send loaded image data to GPU texture array.
@@ -294,24 +363,58 @@ class TiledTexture(glh.Texture, metaclass=TiledTextureMeta):
             This function is called on callback from the
             asynchronous image load function.
         '''
-        layer = len(self.curtiles)
-        if layer >= bs.settings.tile_array_size:
-            # we're exceeding the size of the GL texture array. Replace the least-recent tile
-            _, layer = self.curtiles.popitem()
+        # First check whether tile is still relevant
+        # If there's a lot of panning/zooming, sometimes tiles are loaded that
+        # become obsolete before they are even downloaded.
+        if not ((self.curtilezoom == tile.zoom) and
+                (self.curtileext[0] <= tile.tilex <= self.curtileext[2]) and
+                (self.curtileext[1] <= tile.tiley <= self.curtileext[3])):
+            return
 
-        self.curtiles[(tile.tilex, tile.tiley, tile.zoom)] = layer
-        # Update the ordering of the tile dict: the new tile should be on top
-        self.curtiles.move_to_end((tile.tilex, tile.tiley, tile.zoom), last=False)
-        idxdata = np.array([0, 0, 1, layer], dtype=np.int32)
+        # Make sure our GL context is current
         self.glsurface.makeCurrent()
+
+        # Check if tile is already loaded. This can happen here with multiple
+        # pans/zooms shortly after each other
+        layer = self.curtiles.get((tile.tilex, tile.tiley, tile.zoom), None)
+        if layer is None:
+            # This tile is not loaded yet. Select layer to upload it to
+            layer = len(self.curtiles)
+            if layer >= bs.settings.tile_array_size:
+                # we're exceeding the size of the GL texture array.
+                # Replace the least-recent tile
+                _, layer = self.curtiles.popitem()
+
+            self.curtiles[(tile.tilex, tile.tiley, tile.zoom)] = layer
+            # Upload tile to texture array
+            super().bind(4)
+            self.setLayerData(layer, tile.image)
+            self.release()
+
+        # Update the ordering of the tile dict: the new tile should be on top
+        self.curtiles.move_to_end(
+            (tile.tilex, tile.tiley, tile.zoom), last=False)
+
+        # Update index texture
+        idxdata = np.array([0, 0, 1, layer], dtype=np.int32)
         self.indextexture.bind(2)
-        glh.gl.glTexSubImage2D_alt(glh.Texture.Target2D, 0, tile.idxx, tile.idxy,
-                                   1, 1, glh.Texture.RGBA_Integer,
-                                   glh.Texture.Int32, idxdata.tobytes())
-        super().bind(4)
-        self.setLayerData(layer, tile.image)
+
+        if QT_VERSION_STR[0] == '5':
+            target_value = glh.Texture.Target.Target2D
+            pixel_rgba_value = glh.Texture.PixelFormat.RGBA_Integer
+            pixel_type_value = glh.Texture.PixelType.Int32
+
+        if QT_VERSION_STR[0] == '6':
+            target_value = glh.Texture.Target.Target2D.value
+            pixel_rgba_value = glh.Texture.PixelFormat.RGBA_Integer.value
+            pixel_type_value = glh.Texture.PixelType.Int32.value
+
+
+        glh.gl.glTexSubImage2D_alt(target_value, 0, tile.idxx, tile.idxy,
+                                   1, 1, pixel_rgba_value,
+                                   pixel_type_value, idxdata.tobytes())
+
         self.indextexture.release()
-        self.release()
 
 
 def latlon2tilenum(lat_deg, lon_deg, zoom):

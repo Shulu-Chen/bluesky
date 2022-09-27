@@ -7,12 +7,11 @@ from bluesky.traffic.performance.legacy.performance import esf, phases, calclimi
 from bluesky import settings
 from . import coeff_bada
 
-# Register settings defaults
-settings.set_variable_defaults(perf_path_bada='data/performance/BADA',
-                               performance_dt=1.0, verbose=False)
 
-if not coeff_bada.check(settings.perf_path_bada):
-    raise ImportError('BADA performance model: Error trying to find BADA files in ' + settings.perf_path_bada + '!')
+# Check if BADA is complete
+coeff_bada.check()
+# Register settings defaults
+settings.set_variable_defaults(performance_dt=1.0, verbose=False)
 
 
 class BADA(PerfBase):
@@ -34,7 +33,7 @@ class BADA(PerfBase):
     def __init__(self):
         super().__init__()
         # Load coefficient files if we haven't yet
-        coeff_bada.init(settings.perf_path_bada)
+        coeff_bada.init()
 
         self.warned = False     # Flag: Did we warn for default perf parameters yet?
         self.warned2 = False    # Flag: Use of piston engine aircraft?
@@ -115,7 +114,7 @@ class BADA(PerfBase):
             self.ctct2      = np.array([])    # [1/k]
             self.dtemp      = np.array([])    # [k]
 
-            # Descent Fuel Flow Coefficients
+            # Descent Thrust Coefficients
             # Note: Ctdes,app and Ctdes,lnd assume a 3 degree descent gradient during app and lnd
             self.ctdesl      = np.array([])   # low alt descent thrust coefficient [-]
             self.ctdesh      = np.array([])   # high alt descent thrust coefficient [-]
@@ -452,10 +451,13 @@ class BADA(PerfBase):
         # switch for given vertical speed selvs
         if (bs.traf.selvs.any()>0.) or (bs.traf.selvs.any()<0.):
             # thrust = f(selvs)
-            T = ((bs.traf.selvs!=0)*(((bs.traf.aporasas.vs*self.mass*g0)/     \
-                      (self.ESF*np.maximum(bs.traf.eps,bs.traf.tas)*cpred)) \
-                      + self.D)) + ((bs.traf.selvs==0)*T)
+            T_vs = ((bs.traf.selvs!=0) * \
+                    (((bs.traf.aporasas.vs * np.sign(delalt)*self.mass*g0)/ \
+                    (self.ESF*np.maximum(bs.traf.eps,bs.traf.tas)*cpred)) \
+                    + self.D)) + ((bs.traf.selvs==0)*T)
 
+            # limit minimum thrust in descent to idle thrust
+            T = np.where(descent, np.maximum(T_vs, T), T)
         self.thrust = T
 
 

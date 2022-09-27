@@ -1,5 +1,3 @@
-import warnings
-from bluesky.stack.stackbase import stack
 import numpy as np
 import bluesky as bs
 from bluesky.tools import aero
@@ -51,9 +49,6 @@ class OpenAP(PerfBase):
             self.vmaxer = np.array([])
             self.vmaxap = np.array([])
 
-            self.vsmin = np.array([])
-            self.vsmax = np.array([])
-            self.hmax = np.array([])
             self.vminto = np.array([])
             self.hcross = np.array([])
             self.mmo = np.array([])

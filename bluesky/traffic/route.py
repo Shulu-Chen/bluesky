@@ -1,5 +1,5 @@
 """ Route implementation for the BlueSky FMS."""
-from os import path
+from pathlib import Path
 from weakref import WeakValueDictionary
 from numpy import *
 import bluesky as bs
@@ -44,11 +44,7 @@ class Route(Replaceable):
         self.acid = acid
         self.nwp = 0
 
-        #Vertical fms logc: enable Top of CLimb & Top of Descent logic
-        self.swtoc = True
-        self.swtod = True
-
-        # Waypoint data
+       # Waypoint data
         self.wpname = []    # List of waypoint names for this flight plan
         self.wptype = []    # List of waypoint types
         self.wplat  = []    # List of waypoint latitudes
@@ -81,13 +77,14 @@ class Route(Replaceable):
         # default: False
         self.flag_landed_runway = False
 
-        self.wpdirfrom = []
-        self.wpdistto  = []
+        self.wpdirfrom = []  # [deg] direction leg to wp
+        self.wpdirto   = []  # [deg] direction leg from wp
+        self.wpdistto  = []  # [nm] leg length to wp
         self.wpialt    = []
-        self.wptoalt   = []
-        self.wpxtoalt  = []
-        self.wptorta   = []
-        self.wpxtorta  = []
+        self.wptoalt   = []  # [m] next alt contraint
+        self.wpxtoalt  = []  # [m] distance ot next alt constraint
+        self.wptorta   = []  # [s] next time constraint
+        self.wpxtorta  = []  # [m] distance to next time constaint
 
     @staticmethod
     def get_available_name(data, name_, len_=2):
@@ -365,6 +362,92 @@ class Route(Replaceable):
                 "waypoint added at end of route"
         else:
             return True
+
+    @stack.command
+    def addwaypoints(acidx: 'acid', *args):
+        # Args come in this order: lat, lon, alt, spd, TURNSPD/TURNRAD/FLYBY, turnspeed or turnrad value
+        # If turn is '0', then ignore turnspeed
+        if len(args)%6 !=0:
+            bs.scr.echo('You missed a waypoint value, arguement number must be a multiple of 6.')
+            return
+
+        acid = bs.traf.id[acidx]
+        acrte = Route._routes.get(acid)
+
+        args = reshape(args, (int(len(args)/6), 6))
+
+        for wpdata in args:
+            # Get needed values
+            lat = float(wpdata[0]) # deg
+            lon = float(wpdata[1]) # deg
+            if wpdata[2]:
+                alt = txt2alt(wpdata[2]) # comes in feet, convert
+            else:
+                alt = -999
+            if wpdata[3]:
+                spd = txt2spd(wpdata[3])
+            else:
+                spd = -999
+
+            # Do flyby or flyturn processing
+            if wpdata[4] in ['TURNSPD', 'TURNSPEED']: #
+                acrte.turnspd = txt2spd(wpdata[5])
+                acrte.swflyby   = False
+                acrte.swflyturn = True
+
+            elif wpdata[4] in ['TURNRAD', 'TURNRADIUS']:
+                acrte.turnrad = float(wpdata[5])
+                acrte.swflyby   = False
+                acrte.swflyturn = True
+
+            else:
+                # Either it's a flyby, or a typo.
+                acrte.swflyby   = True
+                acrte.swflyturn = False
+
+
+            name    = acid
+            wptype  = Route.wplatlon
+
+            wpidx = acrte.addwpt_simple(acidx, name, wptype, lat, lon, alt, spd)
+
+        # Calculate flight plan
+        acrte.calcfp()
+
+        # Check for success by checking inserted location in flight plan >= 0
+        if wpidx < 0:
+            return False, "Waypoint " + name + " not added."
+
+    def addwpt_simple(self, iac, name, wptype, lat, lon, alt=-999., spd=-999.):
+        """Adds waypoint in the most simple way possible"""
+        # For safety
+        self.nwp = len(self.wplat)
+
+        name = name.upper().strip()
+
+        wplat = lat
+        wplon = lon
+
+        # Check if name already exists, if so add integer 01, 02, 03 etc.
+        newname = Route.get_available_name(
+            self.wpname, name, 3)
+
+        self.addwpt_data(
+            False, self.nwp, newname, wplat, wplon, wptype, alt, spd)
+
+        idx = self.nwp
+        self.nwp += 1
+
+        #update qdr and "last waypoint switch" in traffic
+        if idx>=0:
+            bs.traf.actwp.next_qdr[iac] = self.getnextqdr()
+            bs.traf.actwp.swlastwp[iac] = (self.iactwp==self.nwp-1)
+
+        # Update autopilot settings
+        if 0 <= self.iactwp < self.nwp:
+            self.direct(iac, self.wpname[self.iactwp])
+
+        return idx
 
     @stack.command
     @staticmethod
@@ -786,6 +869,12 @@ class Route(Replaceable):
         bs.traf.actwp.turnrad[acidx] = acrte.wpturnrad[wpidx]
         bs.traf.actwp.turnspd[acidx] = acrte.wpturnspd[wpidx]
 
+        bs.traf.actwp.nextturnlat[acidx], bs.traf.actwp.nextturnlon[acidx], \
+        bs.traf.actwp.nextturnspd[acidx], bs.traf.actwp.nextturnrad[acidx], \
+        bs.traf.actwp.nextturnidx[acidx] = acrte.getnextturnwp()
+
+        # Determine next turn waypoint data
+
         # Do calculation for VNAV
         acrte.calcfp()
 
@@ -822,12 +911,12 @@ class Route(Replaceable):
             bs.traf.actwp.nextspd[acidx] = -999.
 
 
-        qdr,dist = geo.qdrdist(bs.traf.lat[acidx], bs.traf.lon[acidx],
+        qdr_,dist_ = geo.qdrdist(bs.traf.lat[acidx], bs.traf.lon[acidx],
                              bs.traf.actwp.lat[acidx], bs.traf.actwp.lon[acidx])
 
         # Save leg length & direction in actwp data
-        bs.traf.actwp.curlegdir[acidx] = qdr
-        bs.traf.actwp.curleglen[acidx] = dist
+        bs.traf.actwp.curlegdir[acidx] = qdr_      #[deg]
+        bs.traf.actwp.curleglen[acidx] = dist_*nm  #[m]
 
         if acrte.wpflyturn[wpidx] or acrte.wpturnrad[wpidx]<0.:
             turnrad = acrte.wpturnrad[wpidx]
@@ -836,7 +925,7 @@ class Route(Replaceable):
 
 
         bs.traf.actwp.turndist[acidx] = (bs.traf.actwp.flyby[acidx] > 0.5)  *   \
-                    turnrad*abs(tan(0.5*radians(max(5., abs(degto180(qdr -
+                    turnrad*abs(tan(0.5*radians(max(5., abs(degto180(qdr_ -
                     acrte.wpdirfrom[acrte.iactwp]))))))    # [nm]
 
 
@@ -919,6 +1008,24 @@ class Route(Replaceable):
         if ipage + 1 < npages:
             bs.scr.cmdline("LISTRTE " + acid + "," + str(ipage + 1))
 
+    def getnextturnwp(self):
+        """Give the next turn waypoint data."""
+        # Starting point
+        wpidx = self.iactwp
+        # Find next turn waypoint index
+        turnidx_all = where(self.wpflyturn)[0]
+        argwhere_arr = argwhere(turnidx_all>=wpidx)
+        if argwhere_arr.size == 0:
+            # No turn waypoints, return default values
+            return [0., 0., -999., -999., -999.]
+
+        trnidx = turnidx_all[argwhere(turnidx_all>=wpidx)[0]][0]
+
+
+
+        # Return the next turn waypoint info
+        return [self.wplat[trnidx], self.wplon[trnidx], self.wpturnspd[trnidx], self.wpturnrad[trnidx], trnidx]
+
     def getnextwp(self):
         """Go to next waypoint and return data"""
 
@@ -938,10 +1045,17 @@ class Route(Replaceable):
             # Change RW06,RWY18C,RWY24001 to resp. 06,18C,24
             if "RWY" in name:
                 rwykey = name[8:10]
+                if len(name)>10:
+                    if not name[10].isdigit():
+                        rwykey = name[8:11]
             # also if it is only RW
             else:
                 rwykey = name[7:9]
+                if len(name) > 9:
+                    if not name[9].isdigit():
+                        rwykey = name[7:10]
 
+            # Use this code to look up runway heading
             wphdg = bs.navdb.rwythresholds[name[:4]][rwykey][2]
 
             # keep constant runway heading
@@ -1072,139 +1186,6 @@ class Route(Replaceable):
 
         return True
 
-    def newcalcfp(self): # Not used for now: alternative way which use T/C and T/D as waypoints
-        """Do flight plan calculations"""
-
-        # Remove old top of descents and old top of climbs
-        while self.wpname.count("T/D")>0:
-            self.delwpt("T/D")
-
-        while self.wpname.count("T/C")>0:
-            self.delwpt("T/C")
-
-        # Remove old actual position waypoints
-        while self.wpname.count("A/C")>0:
-            self.delwpt("A/C")
-
-        # Insert actual position as A/C waypoint
-        acidx = bs.traf.id2idx(self.acid)
-        idx = self.iactwp
-        self.insertcalcwp(idx,"A/C")
-        self.wplat[idx] = bs.traf.lat[acidx] # deg
-        self.wplon[idx] = bs.traf.lon[acidx] # deg
-        self.wpalt[idx] = bs.traf.alt[acidx] # m
-        self.wpspd[idx] = bs.traf.tas[acidx] # m/s
-
-        # Calculate distance to last waypoint in route
-        nwp = len(self.wpname)
-        dist2go = [0.0]
-        for i in range(nwp - 2, -1, -1):
-            qdr, dist = geo.qdrdist(self.wplat[i], self.wplon[i],
-                                    self.wplat[i + 1], self.wplon[i + 1])
-            dist2go = [dist2go[0] + dist] + dist2go
-
-        # Make VNAV WP list with only waypoints with altitude constraints
-        # This list we will use to find where to insert t/c and t/d
-        alt = []
-        x   = []
-        name = []
-        for i in range(nwp):
-            if self.wpalt[i]>-1.:
-                alt.append(self.wpalt[i])
-                x.append(dist2go[i])
-                name.append(self.wpname[i]+" ")    # space for check first 2 chars later
-
-        # Find where to insert cruise segment (if any)
-
-        # Find longest segment without altitude constraints
-
-        desslope = clbslope = 1.0
-        crzalt = bs.traf.crzalt[acidx]
-        if crzalt>0.:
-            ilong  = -1
-            dxlong = 0.0
-
-            nvwp = len(alt)
-            for i in range(nvwp-1):
-                if x[i]-x[i+1]> dxlong:
-                    ilong  = i
-                    dxlong = x[i]-x[i+1]
-
-            # VNAV parameters to insert T/Cs and T/Ds
-            crzdist  = 20.*nm   # minimally required distance at cruise level
-            clbslope = 3000.*ft/(10.*nm)    # 1:3 rule for now
-            desslope = clbslope             # 1:3 rule for now
-
-            # Can we get a sufficient distance at cruise altitude?
-            if max(alt[ilong],alt[ilong+1]) < crzalt :
-                dxclimb = (crzalt-alt[ilong])*clbslope
-                dxdesc  = (crzalt-alt[ilong+1])*desslope
-                if x[ilong] - x[ilong+1] > dxclimb + crzdist + dxdesc:
-
-                    # Insert T/C (top of climb) at cruise level
-                   name.insert(ilong+1,"T/C")
-                   alt.insert(ilong+1,crzalt)
-                   x.insert(ilong+1,x[ilong]+dxclimb)
-
-                    # Insert T/D (top of descent) at cruise level
-                   name.insert(ilong+2,"T/D")
-                   alt.insert(ilong+2,crzalt)
-                   x.insert(ilong+2,x[ilong+1]-dxdesc)
-
-        # Compare angles to rates:
-        epsh = 50.*ft   # Nothing to be done for small altitude changes
-        epsx = 1.*nm    # [m] Nothing to be done at this short range
-        i = 0
-        while i<len(alt)-1:
-            if name[i][:2]=="T/":
-                continue
-
-            dy = alt[i+1]-alt[i]   # alt change (pos = climb)
-            dx = x[i]-x[i+1]       # distance (positive)
-
-            dxdes = abs(dy)/desslope
-            dxclb = abs(dy)/clbslope
-
-            if dy<epsh and  dx + epsx > dxdes:   # insert T/D?
-
-               name.insert(i+1,"T/D")
-               alt.insert(i+1,alt[i])
-               x.insert(i+1,x[i+1]-dxdes)
-               i += 1
-
-            elif dy>epsh and  dx + epsx > dxclb:  # insert T/C?
-
-               name.insert(i+1,"T/C")
-               alt.insert(i+1,alt[i+1])
-               x.insert(i+1,x[i]+dxclb)
-               i += 2
-            else:
-                i += 1
-
-        # Now insert T/Cs and T/Ds in actual flight plan
-        nvwp = len(alt)
-        for i in range(nvwp,-1,-1):
-
-            # Copy all new waypoints (which are all named T/C or T/D)
-            if name[i][:2]=="T/":
-
-                # Find place in flight plan to insert T/C or T/D
-                j = nvwp-1
-                while dist2go[j]<x[i] and j>1:
-                    j=j-1
-
-                # Interpolation factor for position on leg
-                f   = (x[i]-dist2go[j+1])/(dist2go[j]-dist2go[j+1])
-
-                lat = f*self.wplat[j]+(1.-f)*self.wplat[j+1]
-                lon = f*self.wplon[j]+(1.-f)*self.wplon[j+1]
-
-                self.wpname.insert(j,name[i])
-                self.wptype.insert(j,Route.calcwp)
-                self.wplat.insert(j,lat)
-                self.wplon.insert(j,lon)
-                self.wpalt.insert(j,alt[i])
-                self.wpspd.insert(j,-999.)
 
     def insertcalcwp(self, i, name):
         """Insert empty wp with no attributes at location i"""
@@ -1218,21 +1199,27 @@ class Route(Replaceable):
 
     def calcfp(self): # Current Flight Plan calculations, which actualize based on flight condition
         """Do flight plan calculations"""
-#        self.delwpt("T/D")
-#        self.delwpt("T/C")
+
+        # Note: No Top of Descent or Top of Climb can inserted here
+        # as this depends on the speed, which might be undefined (often is)
+        # Guidance in autpilot.py takes care of ToD and ToC logic while flying using current speed
+        # This routine prepares data for this by adding a "ruler" along the flight plan in the form of
+        # distance at wp to next altitude constraint (xtoalt), its index ial and the value (toalt)
+        # same logic is used for time consarint (requieed time of arrival) RTAs at waypoints
 
         # Direction to waypoint
         self.nwp = len(self.wpname)
 
-        # Create flight plan calculation table
-        self.wpdirfrom   = self.nwp*[0.]
-        self.wpdistto    = self.nwp*[0.]
-        self.wpialt      = self.nwp*[-1]
-        self.wptoalt     = self.nwp*[-999.]
-        self.wpxtoalt    = self.nwp*[1.]  # Avoid division by zero
-        self.wpirta      = self.nwp*[-1]
-        self.wptorta     = self.nwp*[-999.]
-        self.wpxtorta    = self.nwp*[1.]  #[m] Avoid division by zero
+        # Create cleared flight plan calculation table
+        self.wpdirfrom   = self.nwp*[0.]  # [deg] Direction of leg laving this waypoint
+        self.wpdirto     = self.nwp*[0.]  # [deg] Direction of leg ot this waypoint (if it exists)
+        self.wpdistto    = self.nwp*[0.]  # [nm] Distance of leg to this waypoint in nm
+        self.wpialt      = self.nwp*[-1]  # wp index of next alttud constraint
+        self.wptoalt     = self.nwp*[-999.] # [m] next alt contraint
+        self.wpxtoalt    = self.nwp*[1.]  # [m] dist to next alt constraint, default 1.0 to avoid division by zero
+        self.wpirta      = self.nwp*[-1]  # wp index of next time constraint
+        self.wptorta     = self.nwp*[-999.] # [s] next time constraint
+        self.wpxtorta    = self.nwp*[1.]  # [m] dist to next time constraint, default 1.0 to avoid division by zero
 
         # No waypoints: make empty variables to be safe and return: nothing to do
         if self.nwp==0:
@@ -1244,9 +1231,18 @@ class Route(Replaceable):
         for i in range(0, self.nwp - 1):
             qdr,dist = geo.qdrdist(self.wplat[i]  ,self.wplon[i],
                                 self.wplat[i+1],self.wplon[i+1])
-            self.wpdirfrom[i] = qdr
+            self.wpdirfrom[i] = qdr    # [deg]
             self.wpdistto[i+1]  = dist #[nm]  distto is in nautical miles
 
+        # Also add "from direction" as to directions so no need to shift for actwpdata
+        # direction to will be overwritten in actwpdata in case of a direct to
+        # Add current pos to first waypoint as default value for direction to 1st waypoint
+        iac = bs.traf.id2idx(self.acid)
+        qdr,dist = geo.qdrdist(bs.traf.lat[iac],bs.traf.lon[iac],
+                               self.wplat[0],self.wplon[0])
+        self.wpdirto = [qdr]+self.wpdirfrom[0:-1] #[deg] Direction to waypoints
+
+        # Continue flying in the saem direction
         if self.nwp>1:
             self.wpdirfrom[-1] = self.wpdirfrom[-2]
 
@@ -1375,7 +1371,7 @@ class Route(Replaceable):
         acid = bs.traf.id[acidx]
         acrte = Route._routes.get(acid)
         # Open file in append mode, write header
-        with open(path.join(bs.settings.log_path, 'routelog.txt'), "a") as f:
+        with open(bs.resource(bs.settings.log_path) / 'routelog.txt', "a") as f:
             f.write("\nRoute "+acid+":\n")
             f.write("(name,type,lat,lon,alt,spd,toalt,xtoalt)  ")
             f.write("type: 0=latlon 1=navdb  2=orig  3=dest  4=calwp\n")

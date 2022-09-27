@@ -1,17 +1,27 @@
 """ Main window for the QTGL gui."""
+from pathlib import Path
 import platform
-import os
 
-from PyQt5.QtWidgets import QApplication as app
-from PyQt5.QtCore import Qt, pyqtSlot, QTimer, QItemSelectionModel, QSize
-from PyQt5.QtGui import QPixmap, QIcon
-from PyQt5.QtWidgets import QMainWindow, QSplashScreen, QTreeWidgetItem, \
-    QPushButton, QFileDialog, QDialog, QTreeWidget, QVBoxLayout, \
-    QDialogButtonBox
-from PyQt5 import uic
+try:
+    from PyQt5.QtWidgets import QApplication as app
+    from PyQt5.QtCore import Qt, pyqtSlot, QTimer, QItemSelectionModel, QSize
+    from PyQt5.QtGui import QPixmap, QIcon
+    from PyQt5.QtWidgets import QMainWindow, QSplashScreen, QTreeWidgetItem, \
+        QPushButton, QFileDialog, QDialog, QTreeWidget, QVBoxLayout, \
+        QDialogButtonBox, QMenu
+    from PyQt5 import uic
+except ImportError:
+    from PyQt6.QtWidgets import QApplication as app
+    from PyQt6.QtCore import Qt, pyqtSlot, QTimer, QItemSelectionModel, QSize
+    from PyQt6.QtGui import QPixmap, QIcon
+    from PyQt6.QtWidgets import QMainWindow, QSplashScreen, QTreeWidgetItem, \
+        QPushButton, QFileDialog, QDialog, QTreeWidget, QVBoxLayout, \
+        QDialogButtonBox, QMenu
+    from PyQt6 import uic
 
 # Local imports
 import bluesky as bs
+from bluesky.resourcepath import ResourcePath
 from bluesky.tools.misc import tim2txt
 from bluesky.network import get_ownip
 from bluesky.ui import palette
@@ -27,7 +37,7 @@ if platform.system().lower() == "windows":
     from bluesky.ui.pygame.dialog import fileopen
 
 # Register settings defaults
-bs.settings.set_variable_defaults(gfx_path='data/graphics')
+bs.settings.set_variable_defaults(gfx_path='graphics')
 
 palette.set_default_colours(stack_text=(0, 255, 0),
                             stack_background=(102, 102, 102))
@@ -38,7 +48,8 @@ bg = palette.stack_background
 class Splash(QSplashScreen):
     """ Splash screen: BlueSky logo during start-up"""
     def __init__(self):
-        super().__init__(QPixmap(os.path.join(bs.settings.gfx_path, 'splash.gif')), Qt.WindowStaysOnTopHint)
+        splashfile = bs.resource(bs.settings.gfx_path) / 'splash.gif'
+        super().__init__(QPixmap(splashfile.as_posix()), Qt.WindowType.WindowStaysOnTopHint)
 
 
 class DiscoveryDialog(QDialog):
@@ -55,7 +66,7 @@ class DiscoveryDialog(QDialog):
         self.serverview.setStyleSheet('padding:0px')
         self.serverview.header().resizeSection(0, 180)
         layout.addWidget(self.serverview)
-        btns = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+        btns = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
         layout.addWidget(btns)
         btns.accepted.connect(self.on_accept)
         btns.rejected.connect(parent.closeEvent)
@@ -114,12 +125,14 @@ class MainWindow(QMainWindow):
         # gltimer.timeout.connect(self.nd.updateGL)
         gltimer.start(50)
 
-        if platform.system() == 'Darwin':
-            app.instance().setWindowIcon(QIcon(os.path.join(bs.settings.gfx_path, 'bluesky.icns')))
-        else:
-            app.instance().setWindowIcon(QIcon(os.path.join(bs.settings.gfx_path, 'icon.gif')))
+        gfxpath = bs.resource(bs.settings.gfx_path)
 
-        uic.loadUi(os.path.join(bs.settings.gfx_path, 'mainwindow.ui'), self)
+        if platform.system() == 'Darwin':
+            app.instance().setWindowIcon(QIcon((gfxpath / 'bluesky.icns').as_posix()))
+        else:
+            app.instance().setWindowIcon(QIcon((gfxpath / 'icon.gif').as_posix()))
+
+        uic.loadUi((gfxpath / 'mainwindow.ui').as_posix(), self)
 
         # list of buttons to connect to, give icons, and tooltips
         #           the button         the icon      the tooltip    the callback
@@ -146,13 +159,24 @@ class MainWindow(QMainWindow):
         for b in buttons.items():
             # Set icon
             if not b[1][0] is None:
-                icon = QIcon(os.path.join(bs.settings.gfx_path, 'icons/' + b[1][0]))
+                icon = QIcon((gfxpath / 'icons' / b[1][0]).as_posix())
                 b[0].setIcon(icon)
             # Set tooltip
             if not b[1][1] is None:
                 b[0].setToolTip(b[1][1])
             # Connect clicked signal
             b[0].clicked.connect(b[1][2])
+
+        # If multiple scenario paths exist, add 'Open From' menu
+        scenresource = bs.resource('scenario')
+        if isinstance(scenresource, ResourcePath) and scenresource.nbases > 1:
+            openfrom = QMenu('Open From', self.menuFile)
+            self.menuFile.insertMenu(self.action_Save, openfrom)
+
+            openpkg = openfrom.addAction('Package')
+            openpkg.triggered.connect(lambda: self.show_file_dialog(scenresource.base(-1)))
+            openusr = openfrom.addAction('User')
+            openusr.triggered.connect(lambda: self.show_file_dialog(scenresource.base(0)))
 
         # Link menubar buttons
         self.action_Open.triggered.connect(self.show_file_dialog)
@@ -173,7 +197,7 @@ class MainWindow(QMainWindow):
         self.nodetree.setIndentation(0)
         self.nodetree.setColumnCount(2)
         self.nodetree.setStyleSheet('padding:0px')
-        self.nodetree.setAttribute(Qt.WA_MacShowFocusRect, False)
+        self.nodetree.setAttribute(Qt.WidgetAttribute.WA_MacShowFocusRect, False)
         self.nodetree.header().resizeSection(0, 130)
         self.nodetree.itemClicked.connect(self.nodetreeClicked)
         self.maxhostnum = 0
@@ -188,23 +212,23 @@ class MainWindow(QMainWindow):
         self.lineEdit.setStyleSheet('color:' + fgcolor + '; background-color:' + bgcolor)
 
     def keyPressEvent(self, event):
-        if event.modifiers() & Qt.ShiftModifier \
-                and event.key() in [Qt.Key_Up, Qt.Key_Down, Qt.Key_Left, Qt.Key_Right]:
+        if event.modifiers() & Qt.KeyboardModifier.ShiftModifier \
+                and event.key() in [Qt.Key.Key_Up, Qt.Key.Key_Down, Qt.Key.Key_Left, Qt.Key.Key_Right]:
             dlat = 1.0 / (self.radarwidget.zoom * self.radarwidget.ar)
             dlon = 1.0 / (self.radarwidget.zoom * self.radarwidget.flat_earth)
-            if event.key() == Qt.Key_Up:
+            if event.key() == Qt.Key.Key_Up:
                 self.radarwidget.panzoom(pan=(dlat, 0.0))
-            elif event.key() == Qt.Key_Down:
+            elif event.key() == Qt.Key.Key_Down:
                 self.radarwidget.panzoom(pan=(-dlat, 0.0))
-            elif event.key() == Qt.Key_Left:
+            elif event.key() == Qt.Key.Key_Left:
                 self.radarwidget.panzoom(pan=(0.0, -dlon))
-            elif event.key() == Qt.Key_Right:
+            elif event.key() == Qt.Key.Key_Right:
                 self.radarwidget.panzoom(pan=(0.0, dlon))
 
-        elif event.key() == Qt.Key_Escape:
+        elif event.key() == Qt.Key.Key_Escape:
             self.closeEvent()
 
-        elif event.key() == Qt.Key_F11:  # F11 = Toggle Full Screen mode
+        elif event.key() == Qt.Key.Key_F11:  # F11 = Toggle Full Screen mode
             if not self.isFullScreen():
                 self.showFullScreen()
             else:
@@ -226,8 +250,8 @@ class MainWindow(QMainWindow):
         if nodeid != self.actnode:
             self.actnode = nodeid
             node = self.nodes[nodeid]
-            self.nodelabel.setText('<b>Node</b> {}:{}'.format(node.host_num, node.node_num))
-            self.nodetree.setCurrentItem(node, 0, QItemSelectionModel.ClearAndSelect)
+            self.nodelabel.setText(f'<b>Node</b> {node.host_num}:{node.node_num}')
+            self.nodetree.setCurrentItem(node, 0, QItemSelectionModel.SelectionFlag.ClearAndSelect)
 
     def nodesChanged(self, data):
         for host_id, host_data in data.items():
@@ -246,10 +270,10 @@ class MainWindow(QMainWindow):
                 btn.setText(hostname)
                 btn.setFlat(True)
                 btn.setStyleSheet('font-weight:bold')
-
-                btn.setIcon(QIcon(os.path.join(bs.settings.gfx_path, 'icons/addnode.svg')))
+                icon = bs.resource(bs.settings.gfx_path) / 'icons/addnode.svg'
+                btn.setIcon(QIcon(icon.as_posix()))
                 btn.setIconSize(QSize(24, 16))
-                btn.setLayoutDirection(Qt.RightToLeft)
+                btn.setLayoutDirection(Qt.LayoutDirection.RightToLeft)
                 btn.setMaximumHeight(16)
                 btn.clicked.connect(self.buttonClicked)
                 self.nodetree.setItemWidget(host, 0, btn)
@@ -259,7 +283,7 @@ class MainWindow(QMainWindow):
                 if node_id not in self.nodes:
                     # node_num = node_id[-2] * 256 + node_id[-1]
                     node = QTreeWidgetItem(host)
-                    node.setText(0, '{}:{} <init>'.format(host.host_num, node_num + 1))
+                    node.setText(0, f'{host.host_num}:{node_num + 1} <init>')
                     node.setText(1, '00:00:00')
                     node.node_id  = node_id
                     node.node_num = node_num + 1
@@ -297,7 +321,7 @@ class MainWindow(QMainWindow):
     def setNodeInfo(self, connid, time, scenname):
         node = self.nodes.get(connid)
         if node:
-            node.setText(0, '{}:{} <{}>'.format(node.host_num, node.node_num, scenname))
+            node.setText(0, f'{node.host_num}:{node.node_num} <{scenname}>')
             node.setText(1, time)
 
     @pyqtSlot(QTreeWidgetItem, int)
@@ -366,15 +390,32 @@ class MainWindow(QMainWindow):
         elif hasattr(self.sender(), 'host_id'):
             bs.net.send_event(b'ADDNODES', 1)
 
-    def show_file_dialog(self):
+    def show_file_dialog(self, path=None):
         # Due to Qt5 bug in Windows, use temporarily Tkinter
         if platform.system().lower()=='windows':
             fname = fileopen()
         else:
-            if platform.system().lower() == 'darwin':
-                response = QFileDialog.getOpenFileName(self, 'Open file', bs.settings.scenario_path, 'Scenario files (*.scn)')
+            if path is None:
+                path = bs.resource(bs.settings.scenario_path)
+
+            if isinstance(path, ResourcePath):
+                def getscenpath(resource):
+                    # Find first path that contains scenario files
+                    for p in resource.bases():
+                        for f in p.glob('*.[Ss][Cc][Nn]'):
+                            if f.name.lower() != 'ic.scn':
+                                return p.as_posix()
+                    return p.as_posix()
+                scenpath = getscenpath(path)
+            elif isinstance(path, Path):
+                scenpath = path.as_posix()
             else:
-                response = QFileDialog.getOpenFileName(self, 'Open file', bs.settings.scenario_path, 'Scenario files (*.scn)', options=QFileDialog.DontUseNativeDialog)
+                scenpath = path
+            
+            if platform.system().lower() == 'darwin':
+                response = QFileDialog.getOpenFileName(self, 'Open file', scenpath, 'Scenario files (*.scn)')
+            else:
+                response = QFileDialog.getOpenFileName(self, 'Open file', scenpath, 'Scenario files (*.scn)', options=QFileDialog.DontUseNativeDialog)
             fname = response[0] if isinstance(response, tuple) else response
 
         # Send IC command to stack with filename if selected, else do nothing

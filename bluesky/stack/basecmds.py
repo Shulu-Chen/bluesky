@@ -1,6 +1,6 @@
 ''' BlueSky base stack commands. '''
 import webbrowser
-import os
+from pathlib import Path
 
 import bluesky as bs
 from bluesky import settings
@@ -135,17 +135,30 @@ def initbasecmds():
             ),
             "Define a circle-shaped area",
         ],
+        "CLRCRECMD": [
+            "CLRCRECMD",
+            "",
+            bs.traf.clrcrecmd,
+            "CLRCRECMD will clear CRECMD list of commands a/c creation",
+        ],
         "COLOR": [
             "COLOR name,color (named color or r,g,b)",
             "txt,color",
             bs.scr.color,
             "Set a custom color for an aircraft or shape",
+
         ],
         "CRE": [
             "CRE acid,type,lat,lon,hdg,alt,spd",
             "txt,txt,latlon,[hdg,alt,spd]",
             bs.traf.cre,
             "Create an aircraft",
+        ],
+        "CRECMD": [
+            "CRECMD cmdline (to be added after a/c id )",
+            "string",
+            bs.traf.crecmd,
+            "Add a command for each aircraft to be issued after creation of aircraft",
         ],
         "CRECONFS": [
             "CRECONFS id, type, targetid, dpsi, cpa, tlos_hor, dH, tlos_ver, spd",
@@ -469,11 +482,12 @@ def setscenpath(newpath):
     if not newpath:
         return False, "Needs an absolute or relative path"
 
+    newpath = Path(newpath)
     # If this is a relative path we need to prefix scenario folder
-    if not os.path.isabs(newpath):
-        newpath = os.path.join(settings.scenario_path, newpath)
+    if not newpath.is_absolute():
+        newpath = bs.resource(settings.scenario_path) / newpath
 
-    if not os.path.exists(newpath):
+    if not newpath.is_dir():
         return False, "Error: cannot find path: " + newpath
 
     # Change path

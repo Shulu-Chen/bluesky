@@ -1,23 +1,24 @@
 ''' BlueSky OpenGL radar view. '''
-from os import path
 from ctypes import c_float, c_int, Structure
 import numpy as np
 
-from PyQt5.QtCore import Qt, QEvent, QT_VERSION
+try:
+    from PyQt5.QtCore import Qt, QEvent, QT_VERSION
+except ImportError:
+    from PyQt6.QtCore import Qt, QEvent, QT_VERSION
 
 import bluesky as bs
 from bluesky.core import Signal
 from bluesky.ui.qtgl import glhelpers as glh
 from bluesky.ui.radarclick import radarclick
 from bluesky.ui.qtgl import console
-from bluesky import settings
 from .gltraffic import Traffic
 from .glmap import Map
 from .glnavdata import Navdata
 from .glpoly import Poly
 from .gltiledmap import TiledMap
 # Register settings defaults
-settings.set_variable_defaults(gfx_path='data/graphics')
+bs.settings.set_variable_defaults(gfx_path='graphics')
 
 # Qt smaller than 5.6.2 needs a different approach to pinch gestures
 CORRECT_PINCH = False
@@ -35,12 +36,14 @@ class RadarShaders(glh.ShaderSet):
 
         class GlobalData(Structure):
             _fields_ = [("wrapdir", c_int), ("wraplon", c_float), ("panlat", c_float), ("panlon", c_float),
-                        ("zoom", c_float), ("screen_width", c_int), ("screen_height", c_int), ("vertex_scale_type", c_int)]
+                        ("zoom", c_float), ("screen_width", c_int), ("screen_height", c_int), ("vertex_scale_type", c_int),
+                        ("screen_pixel_ratio", c_float)]
         self.data = GlobalData()
 
     def create(self):
         super().create()
-        self.set_shader_path(path.join(settings.gfx_path, 'shaders'))
+        shaderpath = (bs.resource(bs.settings.gfx_path) / 'shaders').as_posix()
+        self.set_shader_path(shaderpath)
         # Load all shaders for this shader set
         self.load_shader('normal', 'radarwidget-normal.vert',
                          'radarwidget-color.frag')
@@ -60,6 +63,9 @@ class RadarShaders(glh.ShaderSet):
         self.data.panlat = panlat
         self.data.panlon = panlon
         self.data.zoom = zoom
+
+    def set_pixel_ratio(self, pxratio):
+        self.data.screen_pixel_ratio = pxratio
 
     def set_win_width_height(self, w, h):
         self.data.screen_width = w
@@ -84,6 +90,7 @@ class RadarWidget(glh.RenderWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.prevwidth = self.prevheight = 600
+        self.pxratio = 1
         self.panlat = 0.0
         self.panlon = 0.0
         self.zoom = 1.0
@@ -107,9 +114,9 @@ class RadarWidget(glh.RenderWidget):
         self.addobject(Navdata(parent=self))
         self.addobject(Poly(parent=self))
 
-        self.setAttribute(Qt.WA_AcceptTouchEvents, True)
-        self.grabGesture(Qt.PanGesture)
-        self.grabGesture(Qt.PinchGesture)
+        self.setAttribute(Qt.WidgetAttribute.WA_AcceptTouchEvents, True)
+        self.grabGesture(Qt.GestureType.PanGesture)
+        self.grabGesture(Qt.GestureType.PinchGesture)
         # self.grabGesture(Qt.SwipeGesture)
         self.setMouseTracking(True)
 
@@ -153,8 +160,9 @@ class RadarWidget(glh.RenderWidget):
         # Update width, height, and aspect ratio
         self.prevwidth, self.prevheight = width, height
         self.ar = float(width) / max(1, float(height))
+        self.pxratio = self.devicePixelRatio()
+        self.shaderset.set_pixel_ratio(self.pxratio)
         self.shaderset.set_win_width_height(width, height)
-
         # Update zoom
         self.panzoom(zoom=zoom, origin=origin)
 
@@ -267,9 +275,9 @@ class RadarWidget(glh.RenderWidget):
 
     def event(self, event):
         ''' Event handling for input events. '''
-        if event.type() == QEvent.Wheel:
+        if event.type() == QEvent.Type.Wheel:
             # For mice we zoom with control/command and the scrolwheel
-            if event.modifiers() & Qt.ControlModifier:
+            if event.modifiers() & Qt.KeyboardModifier.ControlModifier:
                 origin = (event.pos().x(), event.pos().y())
                 zoom = 1.0
                 try:
@@ -295,16 +303,16 @@ class RadarWidget(glh.RenderWidget):
                     pass
 
         # For touchpad, pinch gesture is used for zoom
-        elif event.type() == QEvent.Gesture:
+        elif event.type() == QEvent.Type.Gesture:
             pan = zoom = None
             dlat = dlon = 0.0
             for g in event.gestures():
-                if g.gestureType() == Qt.PinchGesture:
+                if g.gestureType() == Qt.GestureType.PinchGesture:
                     event.accept(g)
                     zoom = g.scaleFactor() * (zoom or 1.0)
                     if CORRECT_PINCH:
                         zoom /= g.lastScaleFactor()
-                elif g.gestureType() == Qt.PanGesture:
+                elif g.gestureType() == Qt.GestureType.PanGesture:
                     event.accept(g)
                     if abs(g.delta().y() + g.delta().x()) > 1e-1:
                         dlat += 0.005 * g.delta().y() / (self.zoom * self.ar)
@@ -314,44 +322,50 @@ class RadarWidget(glh.RenderWidget):
                 self.panzoomchanged = True
                 return self.panzoom(pan, zoom, self.mousepos)
 
-        elif event.type() == QEvent.MouseButtonPress and event.button() & Qt.LeftButton:
+        elif event.type() == QEvent.Type.MouseButtonPress and event.button() & Qt.MouseButton.LeftButton:
             self.mousedragged = False
             # For mice we pan with control/command and mouse movement.
             # Mouse button press marks the beginning of a pan
-            self.prevmousepos = (event.x(), event.y())
+            self.prevmousepos = (event.pos().x(), event.pos().y())
 
-        elif event.type() == QEvent.MouseButtonRelease and \
-                event.button() & Qt.LeftButton and not self.mousedragged:
-            lat, lon = self.pixelCoordsToLatLon(event.x(), event.y())
+        elif event.type() == QEvent.Type.MouseButtonRelease and \
+                event.button() & Qt.MouseButton.LeftButton and not self.mousedragged:
+            lat, lon = self.pixelCoordsToLatLon(event.pos().x(), event.pos().y())
             actdata = bs.net.get_nodedata()
             tostack, tocmdline = radarclick(console.get_cmdline(), lat, lon,
                                             actdata.acdata, actdata.routedata)
-            console.process_cmdline(tostack + '\n' + tocmdline if tostack else tocmdline)
 
-        elif event.type() == QEvent.MouseMove:
+            console.process_cmdline((tostack + '\n' + tocmdline) if tostack else tocmdline)
+
+        elif event.type() == QEvent.Type.MouseMove:
             self.mousedragged = True
-            self.mousepos = (event.x(), event.y())
-            if event.buttons() & Qt.LeftButton:
+            self.mousepos = (event.pos().x(), event.pos().y())
+            if event.buttons() & Qt.MouseButton.LeftButton:
                 dlat = 0.003 * \
-                    (event.y() - self.prevmousepos[1]) / (self.zoom * self.ar)
+                    (event.pos().y() - self.prevmousepos[1]) / (self.zoom * self.ar)
                 dlon = 0.003 * \
-                    (self.prevmousepos[0] - event.x()) / \
+                    (self.prevmousepos[0] - event.pos().x()) / \
                     (self.zoom * self.flat_earth)
-                self.prevmousepos = (event.x(), event.y())
+                self.prevmousepos = (event.pos().x(), event.pos().y())
                 self.panzoomchanged = True
                 return self.panzoom(pan=(dlat, dlon))
 
-        elif event.type() == QEvent.TouchBegin:
+        elif event.type() == QEvent.Type.TouchBegin:
             # Accept touch start to enable reception of follow-on touch update and touch end events
             event.accept()
 
         # Update pan/zoom to simulation thread only when the pan/zoom gesture is finished
-        elif (event.type() == QEvent.MouseButtonRelease or
-              event.type() == QEvent.TouchEnd) and self.panzoomchanged:
+        elif (event.type() == QEvent.Type.MouseButtonRelease or
+              event.type() == QEvent.Type.TouchEnd) and self.panzoomchanged:
             self.panzoomchanged = False
             bs.net.send_event(b'PANZOOM', dict(pan=(self.panlat, self.panlon),
                                                zoom=self.zoom, ar=self.ar, absolute=True))
             self.panzoom_event.emit(True)
+        elif int(event.type()) == 216:
+            # 216 is screen change event, but doesn't exist (yet) in pyqt as enum
+            self.pxratio = self.devicePixelRatio()
+            self.shaderset.set_pixel_ratio(self.pxratio)
+            return super().event(event)
         else:
             return super().event(event)
         

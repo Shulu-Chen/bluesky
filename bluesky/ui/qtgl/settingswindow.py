@@ -1,17 +1,25 @@
 from os import path
 from glob import glob
 from collections import defaultdict
-from PyQt5.QtCore import Qt, pyqtSlot
-from PyQt5.QtWidgets import QVBoxLayout, QScrollArea, QGroupBox, QWidget, \
-    QFormLayout, QLabel, QSpinBox, QCheckBox, QLineEdit, QHBoxLayout, \
-        QTreeWidget, QTreeWidgetItem, QFrame, QPushButton, QLayout, QComboBox, \
-        QListWidget, QListWidgetItem
+try:
+    from PyQt5.QtCore import Qt, pyqtSlot
+    from PyQt5.QtWidgets import QVBoxLayout, QScrollArea, QGroupBox, QWidget, \
+        QFormLayout, QLabel, QSpinBox, QCheckBox, QLineEdit, QHBoxLayout, \
+            QTreeWidget, QTreeWidgetItem, QFrame, QPushButton, QLayout, QComboBox, \
+            QListWidget, QListWidgetItem
+except ImportError:
+    from PyQt6.QtCore import Qt, pyqtSlot
+    from PyQt6.QtWidgets import QVBoxLayout, QScrollArea, QGroupBox, QWidget, \
+        QFormLayout, QLabel, QSpinBox, QCheckBox, QLineEdit, QHBoxLayout, \
+            QTreeWidget, QTreeWidgetItem, QFrame, QPushButton, QLayout, QComboBox, \
+            QListWidget, QListWidgetItem
 
 import bluesky as bs
 
 def sel_palette(value, changed_fun):
     wid = QComboBox()
-    palfiles = [path.basename(f) for f in glob(path.join(bs.settings.gfx_path, 'palettes', '*'))]
+    
+    palfiles = [path.basename(f) for f in (bs.resource(bs.settings.gfx_path) / 'palettes').glob('*')]
     wid.addItems(palfiles)
     wid.setCurrentText(value)
     wid.currentTextChanged.connect(changed_fun)
@@ -88,7 +96,7 @@ class SettingsWindow(QWidget):
         self.nodetree.setIndentation(0)
         self.nodetree.setColumnCount(2)
         self.nodetree.setStyleSheet('padding:0px')
-        self.nodetree.setAttribute(Qt.WA_MacShowFocusRect, False)
+        self.nodetree.setAttribute(Qt.WidgetAttribute.WA_MacShowFocusRect, False)
         self.nodetree.header().resizeSection(0, 130)
         self.nodetree.setHeaderHidden(True)
         self.nodetree.itemClicked.connect(self.nodetreeClicked)
@@ -96,7 +104,7 @@ class SettingsWindow(QWidget):
         self.nodesettings.setLayout(QVBoxLayout())
         container = QWidget()
         container.setLayout(self.scrollarea.layout)
-        self.scrollarea.layout.setAlignment(Qt.AlignTop|Qt.AlignLeft)
+        self.scrollarea.layout.setAlignment(Qt.AlignmentFlag.AlignTop|Qt.AlignmentFlag.AlignLeft)
         self.scrollarea.setWidget(container)
         self.scrollarea.setWidgetResizable(True)
 

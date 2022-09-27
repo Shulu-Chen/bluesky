@@ -58,14 +58,14 @@ class Fastfont:
                 ix = ix+self.chw[ich-32]
                 # chimg = self.chmaps[ich-32].convert_alpha(screen)
 
-                txtimg.blit(self.chmaps[ich-32],dest,None,pg.BLEND_ADD)
+                txtimg.blit(self.chmaps[ich-32],dest)# Removed pg.BLEND_ADD which broke it on Windows machine
 
-        dest = txtimg.get_rect()    
+        dest = txtimg.get_rect()
 
         # Set position
         if self.swposx <0:
             dest.left = x
-        elif sef.swposx>0:
+        elif self.swposx>0:
             dest.right = x
         else:
             dest.centerx = x
@@ -78,7 +78,7 @@ class Fastfont:
             dest.centery = y
 
         # Paste it onto the screen
-        screen.blit(txtimg,dest,None,pg.BLEND_ADD)
+        screen.blit(txtimg,dest)# Removed pg.BLEND_ADD which broke it on Windows machine
 
         return
 
