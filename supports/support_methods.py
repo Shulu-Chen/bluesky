@@ -29,6 +29,5 @@ class SupportMethods():
         lambda_x = 1/interval
         ac_demand_interval = [int(expovariate(lambda_x)) for i in range(number)]
         depart_time = np.cumsum(ac_demand_interval)
-        depart_time_ori = depart_time.copy()
-        return depart_time, depart_time_ori
+        return depart_time
 
