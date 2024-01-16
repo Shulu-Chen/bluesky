@@ -1,46 +1,30 @@
-# Summary
-## Shulu Chen @ GWU
+# Integrated Conflict Management Platform for UAM
+### Shulu Chen @ GWU
 
-Fork from the BlueSky Air Traffic Simulator developed by TU Delft. The original ReadMe can be seen below.
+This project is a fork of the BlueSky Air Traffic Simulator developed by TU Delft, focused on advancing air traffic management for Urban Air Mobility (UAM).
 
-In this work, we built the NYC structured airspace by helicopter route and replaced the vertiport data.
+The platform uses the Demand Capacity Balancing (DCB) algorithm to precondition traffic, followed by a tactical deconfliction method that provides maneuver advisories, such as speed changes, to mitigate in-air collisions. For detailed insights, refer to our research paper: [Integrated Conflict Management for UAM with Strategic Demand Capacity Balancing and Learning-based Tactical Deconfliction](https://arxiv.org/pdf/2305.10556.pdf).
 
-We designed a trajectory generator in bluesky/scenario/generate_trj.py to generate all of required operations in BlueSky.
+Video Demonstrations:
+* [Rule-based tactical deconflition with DCB](https://youtu.be/v3j6OxP5W9A?feature=shared)
+* [Reinforcement learning tactical deconfliton with DCB](https://youtu.be/Ku6WXChRB0U?feature=shared)
 
-A video demo can be found [here](https://youtu.be/vRyiNrF8ic4).
+Please note that this repository currently includes only the DCB algorithm and the rule-based tactical deconfliction method. The reinforcement learning tactical methods described in the paper will be publicly available soon after our internal review.
 
-# Installation
+## How to Use
 
-To run the case study please run the following steps:
+To get started with the Integrated Conflict Management Platform for UAM, follow these steps:
 
-For windows:
-1. Download NYC branch of this repository.
-   git clone -b NYC https://github.com/Shulu-Chen/bluesky.git
-2. Create a python 3.6 environment (python 3.7 not work).
-3. Install all these packages: ‘pyqt5’, ’pyqtwebengine’, ’numpy’, ’scipy’, ’matplotlib’, ’pandas’, ’msgpack’, ’zmq’, ’pygame’, ‘pyopengl’, ‘rtree’.
-4. Run BlueSky.py to see if you install it successfully.
-5. Run generate_trj.py to generate a new operation list called NYC_test.scn.
-6. In BlueSky GUI, click “file->open” and choose NYC_test.scn, then you can play with that.
-
-For MAC:
-
-All steps are the same, you still need to restart your computer. Additionally, MAC may not support PyOpenGL. You can fix this issue by editing PyOpenGL file OpenGL/platform/ctypesloader.py, and changing the line
-```
-fullName = util.find_library( name )
-```
-to
-```
-fullName = '/System/Library/Frameworks/OpenGL.framework/OpenGL'
-```
-# Features of trajectory generator
-
-1. Run scenario/deconflication_trj.py to generate the flight plan.
-2. The UAV will depart randomly in any ORIG by Poisson dist.
-3. The generator will fulfill all necessary waypoints the UAV need.
-4. For confliction detection, currently we set the buffer radius as 100 meter.
-5. The architecture of our current setting:
-![image](https://github.com/Shulu-Chen/bluesky/blob/NYC/ARC.png)
-
+1. **Clone the Codebase:**
+   Begin by cloning the codebase and installing the necessary packages.
+2. **Generate Scenario Files:**
+   Navigate to `bluesky-DCB/supports` and run `generate_scn_files.py`. This script calls the DCB module to generate scenario files.
+3. **Run the Simulation:**
+   Test the performance of the DCB and tactical deconfliction method by running the simulation script located at `bluesky-DCB/rule_based_tactical.py`.
+4. **Replay Experiment and Access GUI:**
+   To replay the experiment and view the GUI, run `bluesky-DCB/BlueSky.py`. Then, click `File -> Open` and select the saved scenario file `rb_result.scn`.
+5. **View Experiment Results:**
+   All necessary experiment results, including data and logs, are saved in the `bluesky-DCB/result` directory.
 
 ------------------------------------------------------------------------------------------------------------------------------
 
